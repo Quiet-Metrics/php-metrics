@@ -36,9 +36,37 @@ $wa->event('import', [], ['url' => 'https://app.fr/cron', 'ip' => $ipClient]); /
 
 [`examples/wa-proxy.php`](examples/wa-proxy.php) : un fichier à déposer à la racine du site client — le tracking JS devient entièrement first-party (script servi et collecte effectuée sous le domaine du client), invisible pour les listes de blocage. Instructions dans l'en-tête du fichier.
 
+## Tests
+
+```bash
+composer update && composer test
+```
+
+8 tests contre un **vrai serveur HTTP de capture** (`tests/CaptureServer.php` : `php -S` + journal JSON-lines) : contexte déduit de la requête, signature HMAC vérifiée octet par octet, overrides, garde CLI, troncatures, échec silencieux endpoint fermé, transport socket asynchrone réel. Le CaptureServer est réutilisé par les suites des ponts Laravel et Symfony.
+
+Compatibilité vérifiée en CI : PHP 7.4 (PHPUnit 9) → PHP 8.4 (PHPUnit 12).
+
+## Installer en local (avant la publication Packagist)
+
+Depuis un projet client sur la même machine, déclarez le package en *path repository* :
+
+```json
+{
+    "repositories": [
+        { "type": "path", "url": "../WebAnalytics/packages/php", "options": { "symlink": true } }
+    ]
+}
+```
+
+```bash
+composer require laboiteacode/webanalytics-php:@dev
+```
+
+Le symlink fait que toute modification du package est visible immédiatement dans le projet hôte.
+
 ## Reste à faire avant v1
 
-- [ ] Tests (Pest) : contexte, signature, troncatures, CLI, socket/cURL mockés.
+- [x] Tests : contexte, signature, troncatures, CLI, transport réel (PHPUnit + CaptureServer).
 - [ ] Middleware PSR-15 générique (dans ce package ou pont dédié, à trancher).
 - [ ] Helper de batch pour les gros imports (`$wa->flush()`).
-- [ ] CI publique + split monorepo + publication Packagist au lancement.
+- [ ] Split monorepo + publication Packagist au lancement (CI monorepo : ✅).
