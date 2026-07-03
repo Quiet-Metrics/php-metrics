@@ -1,0 +1,23 @@
+{
+    "name": "laboiteacode/webanalytics-php",
+    "description": "Package cœur WebAnalytics (PHP pur) — mesure d'audience sans cookies, 100 % côté serveur (imblocable par les adblockers). Fondation des ponts Laravel et Symfony.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["analytics", "privacy", "rgpd", "sans-cookies", "server-side"],
+    "require": {
+        "php": ">=7.4",
+        "ext-json": "*"
+    },
+    "suggest": {
+        "ext-curl": "Transport de repli si les sockets sortants (fsockopen) sont désactivés"
+    },
+    "autoload": {
+        "psr-4": {
+            "LaBoiteACode\\WebAnalytics\\": "src/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
