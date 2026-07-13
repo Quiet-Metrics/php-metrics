@@ -1,54 +1,16 @@
-# laboiteacode/webanalytics-php — package cœur (PHP pur)
+# laboiteacode/webanalytics-php
 
-Le cœur du tracking **100 % côté serveur, sans cookie et imblocable par les adblockers** : transport non bloquant, signature HMAC, contexte de requête. Zéro dépendance, PHP ≥ 7.4 (mutualisés et WordPress inclus).
+SDK PHP pur d'[Affluence](https://app.affluence.fr) (La Boîte à Code) : mesure d'audience sans cookie, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 7.4 (mutualisés et WordPress inclus).
 
-C'est à la fois **le produit « PHP pur »** (installable seul sur n'importe quel projet PHP) et **la fondation des ponts framework** :
+C'est aussi la fondation des ponts framework : [`laboiteacode/webanalytics-laravel`](../laravel) et [`laboiteacode/webanalytics-symfony`](../symfony) dépendent de ce package.
 
-| Projet du client | Package à installer |
-|---|---|
-| PHP pur / autre framework | `laboiteacode/webanalytics-php` (celui-ci) |
-| Laravel | [`laboiteacode/webanalytics-laravel`](../laravel) (dépend de celui-ci) |
-| Symfony | [`laboiteacode/webanalytics-symfony`](../symfony) (dépend de celui-ci) |
-| WordPress | plugin officiel v1.x (embarque celui-ci) |
-
-Développés dans ce monorepo ; split en lecture seule vers des dépôts publics + Packagist (MIT) au lancement.
-
-## Usage
-
-```php
-use LaBoiteACode\WebAnalytics\Client;
-
-$wa = new Client('wa_pub_xxx', 'wa_sec_xxx', [
-    'endpoint' => 'https://collect.example.fr/api/v1/collect',
-    // 'trust_proxy_headers' => true,   // app derrière un reverse proxy / CDN
-]);
-
-$wa->pageview();                          // contexte déduit de la requête courante
-$wa->event('achat', ['montant' => 49]);   // événement + propriétés scalaires
-$wa->event('import', [], ['url' => 'https://app.fr/cron', 'ip' => $ipClient]); // hors requête HTTP (CLI/job)
-```
-
-- **Non bloquant** : socket « write-and-forget » (~1 ms perçu), repli cURL 400 ms.
-- **Jamais d'exception** : tout échec est silencieux — l'analytics ne casse pas le site hôte.
-- **Mode signé** : avec la clé secrète, chaque hit est signé (HMAC-SHA256) ; c'est ce qui autorise le serveur de collecte à honorer l'IP/UA du *visiteur* transmis dans le payload (spec : `docs/05-api-et-sdk.md`).
-
-## Proxy first-party anti-adblock
-
-[`examples/wa-proxy.php`](examples/wa-proxy.php) : un fichier à déposer à la racine du site client — le tracking JS devient entièrement first-party (script servi et collecte effectuée sous le domaine du client), invisible pour les listes de blocage. Instructions dans l'en-tête du fichier.
-
-## Tests
+## Installation
 
 ```bash
-composer update && composer test
+composer require laboiteacode/webanalytics-php
 ```
 
-8 tests contre un **vrai serveur HTTP de capture** (`tests/CaptureServer.php` : `php -S` + journal JSON-lines) : contexte déduit de la requête, signature HMAC vérifiée octet par octet, overrides, garde CLI, troncatures, échec silencieux endpoint fermé, transport socket asynchrone réel. Le CaptureServer est réutilisé par les suites des ponts Laravel et Symfony.
-
-Compatibilité vérifiée en CI : PHP 7.4 (PHPUnit 9) → PHP 8.4 (PHPUnit 12).
-
-## Installer en local (avant la publication Packagist)
-
-Depuis un projet client sur la même machine, déclarez le package en *path repository* :
+Avant la publication sur Packagist (développement en monorepo), déclarez le package en *path repository* depuis le projet hôte :
 
 ```json
 {
@@ -62,11 +24,70 @@ Depuis un projet client sur la même machine, déclarez le package en *path repo
 composer require laboiteacode/webanalytics-php:@dev
 ```
 
-Le symlink fait que toute modification du package est visible immédiatement dans le projet hôte.
+## Configuration
 
-## Reste à faire avant v1
+Le constructeur prend la clé publique du site, la clé secrète (optionnelle mais recommandée : elle active le mode signé) et un tableau d'options :
 
-- [x] Tests : contexte, signature, troncatures, CLI, transport réel (PHPUnit + CaptureServer).
-- [ ] Middleware PSR-15 générique (dans ce package ou pont dédié, à trancher).
-- [ ] Helper de batch pour les gros imports (`$wa->flush()`).
-- [ ] Split monorepo + publication Packagist au lancement (CI monorepo : ✅).
+```php
+use LaBoiteACode\WebAnalytics\Client;
+
+$wa = new Client('wa_pub_demo', 'wa_sec_xxx', [
+    'endpoint' => 'https://app.affluence.fr/api/v1/collect', // défaut
+    'timeout_ms' => 400,             // délai max consenti à l'envoi (min 50)
+    'async' => true,                 // socket fire-and-forget ; false = cURL synchrone court
+    'trust_proxy_headers' => false,  // true si l'app est derrière un reverse proxy / CDN
+    'defaults' => [],                // contexte appliqué à tous les hits, ex. ['lang' => 'fr-FR']
+]);
+```
+
+Les deux clés se trouvent dans les réglages du site sur le tableau de bord Affluence.
+
+## Usage
+
+```php
+use LaBoiteACode\WebAnalytics\Client;
+
+$wa = new Client('wa_pub_demo', 'wa_sec_xxx');
+
+// Page vue : URL, referrer, IP et User-Agent du visiteur, langue
+// sont déduits de la requête HTTP courante.
+$wa->pageview();
+
+// Événement personnalisé avec propriétés (valeurs scalaires, 30 clés max).
+$wa->event('achat', ['montant' => 49, 'plan' => 'pro']);
+```
+
+Hors requête HTTP (CLI, cron, worker), passez le contexte en surcharge, `url` est obligatoire :
+
+```php
+$wa->event('import', ['lignes' => 1200], [
+    'url' => 'https://app.fr/cron',
+    'ip'  => $ipClient,          // IP du visiteur concerné, si connue
+    'ts'  => time(),             // horodatage de l'événement
+]);
+```
+
+Les surcharges acceptées sont `url`, `referrer`, `ip`, `ua`, `lang` et `ts` ; elles priment sur le contexte déduit et s'appliquent aussi à `pageview()`.
+
+### Proxy first-party anti-adblock
+
+[`examples/wa-proxy.php`](examples/wa-proxy.php) : un fichier unique à déposer à la racine du site client. Le navigateur ne parle qu'au domaine du site, le proxy injecte l'IP et le User-Agent réels du visiteur, signe le payload avec la clé secrète puis le transmet au serveur de collecte. Aucune liste de blocage par domaine ne peut l'attraper.
+
+```html
+<script defer src="/wa.js" data-site="wa_pub_demo" data-endpoint="/wa-proxy.php"></script>
+```
+
+Les trois constantes à renseigner (`WA_ENDPOINT`, `WA_SECRET`, `WA_MAX_BODY`) sont documentées dans l'en-tête du fichier.
+
+## Comment ça marche
+
+- **Payload compact** : clés courtes (`k`, `t`, `u`, `n`, `r`, `l`, `p`), plafonné à 4 Ko. Spec complète : `docs/05-api-et-sdk.md` à la racine du monorepo.
+- **Mode signé** : avec la clé secrète, chaque hit part avec les en-têtes `X-WA-Timestamp` et `X-WA-Signature` (HMAC-SHA256 de `timestamp.corps`). C'est la seule chose qui autorise le serveur de collecte à honorer l'IP, le User-Agent et l'horodatage du visiteur transmis dans le payload.
+- **Non bloquant** : socket « write-and-forget » (environ 1 ms perçu par la page), repli cURL avec timeout de 400 ms si les sockets sortants sont désactivés.
+- **Jamais d'exception** : tout échec (endpoint injoignable, payload trop gros, contexte absent) est silencieux. L'analytics ne casse jamais le site hôte.
+
+Compatibilité : PHP >= 7.4, extension `ext-json` uniquement (`ext-curl` suggérée pour le transport de repli). Tests : `composer test` (PHPUnit contre un vrai serveur HTTP de capture, voir `tests/`).
+
+## Licence
+
+MIT.

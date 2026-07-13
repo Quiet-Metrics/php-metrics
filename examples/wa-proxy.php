@@ -1,13 +1,13 @@
 <?php
 
 /**
- * WebAnalytics — proxy first-party (anti-adblock), fichier unique à déposer
- * à la racine du site client (aucune dépendance, PHP >= 7.4).
+ * Affluence (WebAnalytics), proxy first-party anti-adblock : fichier unique à
+ * déposer à la racine du site client (aucune dépendance, PHP >= 7.4).
  *
  * Le navigateur n'appelle QUE le domaine du site : les listes de blocage par
  * domaine (EasyPrivacy…) ne voient jamais notre endpoint. Le proxy injecte
  * l'IP et le User-Agent réels du visiteur dans le payload puis le signe avec
- * la clé secrète (mode signé — docs/05-api-et-sdk.md §1), avant de le
+ * la clé secrète (mode signé, docs/05-api-et-sdk.md §1), avant de le
  * transmettre au serveur de collecte.
  *
  * Installation :
@@ -17,7 +17,7 @@
  *      <script defer src="/wa.js" data-site="wa_pub_…" data-endpoint="/wa-proxy.php"></script>
  */
 
-const WA_ENDPOINT = 'https://collect.example.fr/api/v1/collect';
+const WA_ENDPOINT = 'https://app.affluence.fr/api/v1/collect';
 const WA_SECRET   = '';   // wa_sec_… (recommandé : active le mode signé)
 const WA_MAX_BODY = 4096; // octets
 
@@ -42,7 +42,7 @@ if (!is_array($payload)) {
 
 // Contexte réel du visiteur, injecté côté serveur (le navigateur ne connaît
 // pas son IP publique). Sans signature, le serveur de collecte les ignorera
-// et se rabattra sur l'IP du proxy — d'où l'intérêt de WA_SECRET.
+// et se rabattra sur l'IP du proxy : d'où l'intérêt de WA_SECRET.
 $payload['ip'] = $_SERVER['REMOTE_ADDR'] ?? null;
 $payload['ua'] = $_SERVER['HTTP_USER_AGENT'] ?? null;
 $payload['ts'] = time();
@@ -76,7 +76,9 @@ if (function_exists('curl_init') && ($ch = curl_init(WA_ENDPOINT)) !== false) {
         CURLOPT_NOSIGNAL => true,
     ]);
     @curl_exec($ch);
-    curl_close($ch);
+    if (PHP_VERSION_ID < 80000) {
+        curl_close($ch); // sans effet et déprécié depuis PHP 8 (handle objet, libéré par le GC)
+    }
 }
 
 http_response_code(202);

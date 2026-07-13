@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace LaBoiteACode\WebAnalytics;
 
 /**
- * Client de collecte WebAnalytics — tracking 100 % côté serveur, sans cookie.
+ * Client de collecte Affluence (WebAnalytics) : tracking 100 % côté serveur,
+ * sans cookie.
  *
  * Compatible PHP >= 7.4, zéro dépendance (adoption maximale : mutualisés,
  * WordPress, vieux projets). Spec du payload : docs/05-api-et-sdk.md.
  *
- * Contrat : ne JAMAIS casser le site hôte — tout échec est silencieux,
+ * Contrat : ne JAMAIS casser le site hôte. Tout échec est silencieux,
  * l'envoi est non bloquant (socket « write-and-forget », repli cURL 400 ms).
  *
  *     $wa = new Client('wa_pub_xxx', 'wa_sec_xxx');
@@ -44,7 +45,7 @@ final class Client
     {
         $this->publicKey = $publicKey;
         $this->secretKey = $secretKey;
-        $this->endpoint = $options['endpoint'] ?? 'https://collect.example.fr/api/v1/collect';
+        $this->endpoint = $options['endpoint'] ?? 'https://app.affluence.fr/api/v1/collect';
         $this->timeoutMs = max(50, (int) ($options['timeout_ms'] ?? 400));
         $this->async = (bool) ($options['async'] ?? true);
         $this->trustProxyHeaders = (bool) ($options['trust_proxy_headers'] ?? false);
@@ -53,7 +54,7 @@ final class Client
 
     /**
      * Page vue. Le contexte (URL, referrer, IP et User-Agent du visiteur,
-     * langue) est déduit de la requête HTTP courante, surchageable :
+     * langue) est déduit de la requête HTTP courante, surchargeable :
      * pageview(['url' => …, 'ip' => …]).
      *
      * @param array{url?:string,referrer?:string,ip?:string,ua?:string,lang?:string,ts?:int} $overrides
@@ -87,7 +88,11 @@ final class Client
             $payload = [
                 'k' => $this->publicKey,
                 't' => $type,
-                'n' => $name !== null ? mb_substr($name, 0, 120) : null,
+                // mbstring n'est pas garanti partout (zéro dépendance) ; repli
+                // substr acceptable : les noms d'événements de la spec sont ASCII.
+                'n' => $name !== null
+                    ? (\function_exists('mb_substr') ? mb_substr($name, 0, 120) : substr($name, 0, 120))
+                    : null,
                 'u' => $ctx['url'] ?? null,
                 'r' => $ctx['referrer'] ?? null,
                 'l' => $ctx['lang'] ?? null,
@@ -233,6 +238,8 @@ final class Client
             CURLOPT_NOSIGNAL => true,
         ]);
         @curl_exec($ch);
-        curl_close($ch);
+        if (PHP_VERSION_ID < 80000) {
+            curl_close($ch); // sans effet et déprécié depuis PHP 8 (handle objet, libéré par le GC)
+        }
     }
 }
