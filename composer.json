@@ -1,6 +1,6 @@
 {
-    "name": "laboiteacode/webanalytics-php",
-    "description": "Package cœur Affluence / WebAnalytics (PHP pur) : mesure d'audience sans cookies, 100 % côté serveur, imblocable par les adblockers. Fondation des ponts Laravel et Symfony.",
+    "name": "quiet-metrics/php-metrics",
+    "description": "Package cœur Quiet Metrics (PHP pur) : mesure d'audience sans cookies, 100 % côté serveur, imblocable par les adblockers. Fondation des ponts Laravel et Symfony.",
     "type": "library",
     "license": "MIT",
     "keywords": ["analytics", "privacy", "rgpd", "sans-cookies", "server-side"],
@@ -16,12 +16,12 @@
     },
     "autoload": {
         "psr-4": {
-            "LaBoiteACode\\WebAnalytics\\": "src/"
+            "QuietMetrics\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "LaBoiteACode\\WebAnalytics\\Tests\\": "tests/"
+            "QuietMetrics\\Tests\\": "tests/"
         }
     },
     "scripts": {

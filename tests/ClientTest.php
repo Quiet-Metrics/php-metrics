@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace LaBoiteACode\WebAnalytics\Tests;
+namespace QuietMetrics\Tests;
 
-use LaBoiteACode\WebAnalytics\Client;
+use QuietMetrics\Client;
 use PHPUnit\Framework\TestCase;
 
 final class ClientTest extends TestCase
@@ -38,7 +38,7 @@ final class ClientTest extends TestCase
 
     private function client(?string $secret = null, array $options = []): Client
     {
-        return new Client('wa_pub_test', $secret, $options + [
+        return new Client('qm_pub_test', $secret, $options + [
             'endpoint' => self::$server->endpoint(),
             'async' => false, // cURL synchrone : capture déterministe en test
         ]);
@@ -66,7 +66,7 @@ final class ClientTest extends TestCase
         $this->assertCount(1, $requests);
         $payload = json_decode($requests[0]['body'], true);
 
-        $this->assertSame('wa_pub_test', $payload['k']);
+        $this->assertSame('qm_pub_test', $payload['k']);
         $this->assertSame('pageview', $payload['t']);
         $this->assertSame('https://monsite.fr/tarifs?utm_source=nl', $payload['u']);
         $this->assertSame('https://google.fr/', $payload['r']);
@@ -81,15 +81,15 @@ final class ClientTest extends TestCase
     {
         $this->fakeRequest();
 
-        $this->client('wa_sec_secret')->event('achat', ['montant' => 49]);
+        $this->client('qm_sec_secret')->event('achat', ['montant' => 49]);
 
         $request = self::$server->requests()[0];
-        $timestamp = $request['headers']['x-wa-timestamp'];
-        $signature = $request['headers']['x-wa-signature'];
+        $timestamp = $request['headers']['x-qm-timestamp'];
+        $signature = $request['headers']['x-qm-signature'];
 
         $this->assertNotEmpty($timestamp);
         $this->assertSame(
-            hash_hmac('sha256', $timestamp.'.'.$request['body'], 'wa_sec_secret'),
+            hash_hmac('sha256', $timestamp.'.'.$request['body'], 'qm_sec_secret'),
             $signature,
             'la signature couvre exactement "timestamp.corps"',
         );
@@ -107,8 +107,8 @@ final class ClientTest extends TestCase
         $this->client()->pageview();
 
         $headers = self::$server->requests()[0]['headers'];
-        $this->assertArrayNotHasKey('x-wa-signature', $headers);
-        $this->assertArrayNotHasKey('x-wa-timestamp', $headers);
+        $this->assertArrayNotHasKey('x-qm-signature', $headers);
+        $this->assertArrayNotHasKey('x-qm-timestamp', $headers);
     }
 
     public function test_les_surcharges_priment_sur_le_contexte(): void
@@ -150,7 +150,7 @@ final class ClientTest extends TestCase
     {
         $this->fakeRequest();
 
-        $client = new Client('wa_pub_test', null, [
+        $client = new Client('qm_pub_test', null, [
             'endpoint' => 'http://127.0.0.1:1/api/v1/collect', // port fermé
             'async' => false,
             'timeout_ms' => 100,
@@ -167,12 +167,12 @@ final class ClientTest extends TestCase
         $this->fakeRequest();
 
         // async = true (défaut) : socket « write-and-forget ».
-        $client = new Client('wa_pub_test', 'wa_sec_secret', ['endpoint' => self::$server->endpoint()]);
+        $client = new Client('qm_pub_test', 'qm_sec_secret', ['endpoint' => self::$server->endpoint()]);
         $client->pageview();
 
         $requests = self::$server->requests(1, 3000);
         $this->assertCount(1, $requests, 'le hit arrive même sans lire la réponse');
-        $this->assertSame('wa_pub_test', json_decode($requests[0]['body'], true)['k']);
-        $this->assertArrayHasKey('x-wa-signature', $requests[0]['headers']);
+        $this->assertSame('qm_pub_test', json_decode($requests[0]['body'], true)['k']);
+        $this->assertArrayHasKey('x-qm-signature', $requests[0]['headers']);
     }
 }

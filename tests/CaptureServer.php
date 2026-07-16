@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace LaBoiteACode\WebAnalytics\Tests;
+namespace QuietMetrics\Tests;
 
 /**
  * Mini serveur HTTP de capture pour les tests de transport : démarre le
@@ -21,7 +21,7 @@ final class CaptureServer
     public function start(): void
     {
         $this->port = random_int(40000, 49999);
-        $this->logFile = tempnam(sys_get_temp_dir(), 'wa-capture-');
+        $this->logFile = tempnam(sys_get_temp_dir(), 'qm-capture-');
 
         $router = __DIR__.'/capture-router.php';
         $this->process = proc_open(

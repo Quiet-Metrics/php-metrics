@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace LaBoiteACode\WebAnalytics;
+namespace QuietMetrics;
 
 /**
- * Client de collecte Affluence (WebAnalytics) : tracking 100 % côté serveur,
+ * Client de collecte Quiet Metrics : tracking 100 % côté serveur,
  * sans cookie.
  *
  * Compatible PHP >= 7.4, zéro dépendance (adoption maximale : mutualisés,
@@ -14,9 +14,9 @@ namespace LaBoiteACode\WebAnalytics;
  * Contrat : ne JAMAIS casser le site hôte. Tout échec est silencieux,
  * l'envoi est non bloquant (socket « write-and-forget », repli cURL 400 ms).
  *
- *     $wa = new Client('wa_pub_xxx', 'wa_sec_xxx');
- *     $wa->pageview();
- *     $wa->event('achat', ['montant' => 49]);
+ *     $qm = new Client('qm_pub_xxx', 'qm_sec_xxx');
+ *     $qm->pageview();
+ *     $qm->event('achat', ['montant' => 49]);
  */
 final class Client
 {
@@ -45,7 +45,7 @@ final class Client
     {
         $this->publicKey = $publicKey;
         $this->secretKey = $secretKey;
-        $this->endpoint = $options['endpoint'] ?? 'https://app.affluence.fr/api/v1/collect';
+        $this->endpoint = $options['endpoint'] ?? 'https://app.quietmetrics.dev/api/v1/collect';
         $this->timeoutMs = max(50, (int) ($options['timeout_ms'] ?? 400));
         $this->async = (bool) ($options['async'] ?? true);
         $this->trustProxyHeaders = (bool) ($options['trust_proxy_headers'] ?? false);
@@ -119,8 +119,8 @@ final class Client
             $headers = ['Content-Type: application/json'];
             if ($this->secretKey !== null) {
                 $ts = (string) time();
-                $headers[] = 'X-WA-Timestamp: ' . $ts;
-                $headers[] = 'X-WA-Signature: ' . hash_hmac('sha256', $ts . '.' . $body, $this->secretKey);
+                $headers[] = 'X-QM-Timestamp: ' . $ts;
+                $headers[] = 'X-QM-Signature: ' . hash_hmac('sha256', $ts . '.' . $body, $this->secretKey);
             }
 
             if (!($this->async && $this->sendSocket($body, $headers))) {
