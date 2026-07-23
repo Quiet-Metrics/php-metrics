@@ -1,0 +1,23 @@
+<svg width="1544" height="500" viewBox="0 0 1544 500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bannière Quiet Metrics, charte « papier chaud » (crème #F4F1EA, sauge #5A6B4D).
+       Rendu : rsvg-convert -w 1544 -h 500 banner.svg > banner.png -->
+  <rect width="1544" height="500" fill="#F4F1EA"/>
+  <!-- Filigrane : barres décroissantes de la marque, en sauge très clair -->
+  <g>
+    <rect x="1150" y="120" width="88" height="320" rx="30" fill="#E6E9DE"/>
+    <rect x="1264" y="205" width="88" height="235" rx="30" fill="#E0E4D4"/>
+    <rect x="1378" y="290" width="88" height="150" rx="30" fill="#DADFC9"/>
+  </g>
+  <!-- Logo : carré sauge, trois barres décroissantes crème (brand-mark ×4.31) -->
+  <g transform="translate(96,86)">
+    <rect width="112" height="112" rx="30" fill="#5A6B4D"/>
+    <rect x="28" y="34.5" width="13" height="47.5" rx="6.5" fill="#F4F1EA"/>
+    <rect x="49.5" y="49.5" width="13" height="32.5" rx="6.5" fill="#F4F1EA"/>
+    <rect x="71" y="62.5" width="13" height="19.5" rx="6.5" fill="#F4F1EA"/>
+  </g>
+  <text x="240" y="162" font-family="Hanken Grotesk, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="64" font-weight="700" letter-spacing="-1.5" fill="#1B1A16">Quiet<tspan dx="14" font-weight="400" fill="#6C685E">Metrics</tspan></text>
+  <text x="96" y="330" font-family="Hanken Grotesk, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="92" font-weight="700" letter-spacing="-2.5" fill="#485838">PHP SDK</text>
+  <text x="98" y="396" font-family="IBM Plex Mono, Menlo, Monaco, monospace" font-size="28" fill="#6C685E">Cookie-free analytics · 100 % server-side · Privacy-first</text>
+  <text x="98" y="452" font-family="Hanken Grotesk, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" font-weight="600" fill="#485838">quietmetrics.dev</text>
+  <rect y="490" width="1544" height="10" fill="#5A6B4D"/>
+</svg>

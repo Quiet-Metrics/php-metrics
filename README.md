@@ -1,8 +1,12 @@
 # quiet-metrics/php-metrics
 
-SDK PHP pur de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : mesure d'audience sans cookie, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 7.4 (mutualisés et WordPress inclus).
+![Quiet Metrics: PHP SDK](art/banner.png)
 
-C'est aussi la fondation des ponts framework : [`quiet-metrics/laravel-metrics`](../laravel) et [`quiet-metrics/symfony-metrics`](../symfony) dépendent de ce package.
+> 🇫🇷 [Version française](README.fr.md)
+
+Plain-PHP SDK for [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code): cookie-free audience measurement, sent 100% from your server, hence invisible to ad blockers. Zero dependencies, compatible with PHP >= 7.4 (shared hosting and WordPress included).
+
+It is also the foundation of the framework bridges: [`quiet-metrics/laravel-metrics`](https://github.com/Quiet-Metrics/laravel-metrics) and [`quiet-metrics/symfony-metrics`](https://github.com/Quiet-Metrics/symfony-metrics) depend on this package.
 
 ## Installation
 
@@ -10,7 +14,7 @@ C'est aussi la fondation des ponts framework : [`quiet-metrics/laravel-metrics`]
 composer require quiet-metrics/php-metrics
 ```
 
-Avant la publication sur Packagist (bêta privée), installez depuis le dépôt GitHub (accès requis) :
+Before the Packagist release (private beta), install from the GitHub repository (access required):
 
 ```json
 {
@@ -24,32 +28,32 @@ Avant la publication sur Packagist (bêta privée), installez depuis le dépôt 
 composer require quiet-metrics/php-metrics:^1.0
 ```
 
-(Le dépôt est tagué : la contrainte stable suffit, pas besoin de `@dev`.)
+(The repository is tagged: the stable constraint is enough, no need for `@dev`.)
 
 ## Configuration
 
-Le constructeur prend la clé publique du site, la clé secrète et un tableau d'options.
+The constructor takes the site's public key, the secret key and an options array.
 
-> **La clé secrète est indispensable en envoi serveur.** Elle active le mode
-> signé (HMAC), seul cas où la plateforme fait confiance à l'IP et au
-> User-Agent du visiteur transmis dans le payload. Sans elle, chaque hit est
-> attribué à l'adresse IP de VOTRE serveur : tous vos visiteurs n'en
-> compteraient qu'un seul. Ne l'omettez que derrière le proxy first-party
-> (`examples/qm-proxy.php`), qui signe lui-même.
+> **The secret key is essential for server-side sending.** It enables signed
+> mode (HMAC), the only case where the platform trusts the visitor IP and
+> User-Agent carried in the payload. Without it, every hit is attributed to
+> YOUR server's IP address: all your visitors would count as one. Only omit
+> it behind the first-party proxy (`examples/qm-proxy.php`), which signs by
+> itself.
 
 ```php
 use QuietMetrics\Client;
 
 $qm = new Client('qm_pub_demo', 'qm_sec_xxx', [
-    'endpoint' => 'https://quietmetrics.dev/api/v1/collect', // défaut
-    'timeout_ms' => 400,             // délai max consenti à l'envoi (min 50)
-    'async' => true,                 // socket fire-and-forget ; false = cURL synchrone court
-    'trust_proxy_headers' => false,  // true si l'app est derrière un reverse proxy / CDN
-    'defaults' => [],                // contexte appliqué à tous les hits, ex. ['lang' => 'fr-FR']
+    'endpoint' => 'https://quietmetrics.dev/api/v1/collect', // default
+    'timeout_ms' => 400,             // max time granted to the send (min 50)
+    'async' => true,                 // fire-and-forget socket; false = short synchronous cURL
+    'trust_proxy_headers' => false,  // true if the app sits behind a reverse proxy / CDN
+    'defaults' => [],                // context applied to every hit, e.g. ['lang' => 'en-US']
 ]);
 ```
 
-Les deux clés se trouvent dans les réglages du site sur le tableau de bord Quiet Metrics.
+Both keys live in the site settings of the Quiet Metrics dashboard.
 
 ## Usage
 
@@ -58,45 +62,45 @@ use QuietMetrics\Client;
 
 $qm = new Client('qm_pub_demo', 'qm_sec_xxx');
 
-// Page vue : URL, referrer, IP et User-Agent du visiteur, langue
-// sont déduits de la requête HTTP courante.
+// Page view: the visitor's URL, referrer, IP, User-Agent and language
+// are inferred from the current HTTP request.
 $qm->pageview();
 
-// Événement personnalisé avec propriétés (valeurs scalaires, 30 clés max).
-$qm->event('achat', ['montant' => 49, 'plan' => 'pro']);
+// Custom event with properties (scalar values, 30 keys max).
+$qm->event('purchase', ['amount' => 49, 'plan' => 'pro']);
 ```
 
-Hors requête HTTP (CLI, cron, worker), passez le contexte en surcharge, `url` est obligatoire :
+Outside an HTTP request (CLI, cron, worker), pass the context as overrides; `url` is then required:
 
 ```php
-$qm->event('import', ['lignes' => 1200], [
-    'url' => 'https://app.fr/cron',
-    'ip'  => $ipClient,          // IP du visiteur concerné, si connue
-    'ts'  => time(),             // horodatage de l'événement
+$qm->event('import', ['rows' => 1200], [
+    'url' => 'https://app.example/cron',
+    'ip'  => $visitorIp,         // IP of the visitor concerned, if known
+    'ts'  => time(),             // event timestamp
 ]);
 ```
 
-Les surcharges acceptées sont `url`, `referrer`, `ip`, `ua`, `lang` et `ts` ; elles priment sur le contexte déduit et s'appliquent aussi à `pageview()`.
+Accepted overrides are `url`, `referrer`, `ip`, `ua`, `lang` and `ts`; they take precedence over the inferred context and also apply to `pageview()`.
 
-### Proxy first-party anti-adblock
+### First-party anti-adblock proxy
 
-[`examples/qm-proxy.php`](examples/qm-proxy.php) : un fichier unique à déposer à la racine du site client. Le navigateur ne parle qu'au domaine du site, le proxy injecte l'IP et le User-Agent réels du visiteur, signe le payload avec la clé secrète puis le transmet au serveur de collecte. Aucune liste de blocage par domaine ne peut l'attraper.
+[`examples/qm-proxy.php`](examples/qm-proxy.php): a single file to drop at the root of the client site. The browser only ever talks to the site's own domain; the proxy injects the visitor's real IP and User-Agent, signs the payload with the secret key, then forwards it to the collection server. No domain-based blocklist can catch it.
 
 ```html
 <script defer src="/qm.js" data-site="qm_pub_demo" data-endpoint="/qm-proxy.php"></script>
 ```
 
-Les trois constantes à renseigner (`QM_ENDPOINT`, `QM_SECRET`, `QM_MAX_BODY`) sont documentées dans l'en-tête du fichier.
+The three constants to fill in (`QM_ENDPOINT`, `QM_SECRET`, `QM_MAX_BODY`) are documented in the file header.
 
-## Comment ça marche
+## How it works
 
-- **Payload compact** : clés courtes (`k`, `t`, `u`, `n`, `r`, `l`, `p`), plafonné à 4 Ko. Spec complète : `docs/05-api-et-sdk.md` à la racine du monorepo.
-- **Mode signé** : avec la clé secrète, chaque hit part avec les en-têtes `X-QM-Timestamp` et `X-QM-Signature` (HMAC-SHA256 de `timestamp.corps`). C'est la seule chose qui autorise le serveur de collecte à honorer l'IP, le User-Agent et l'horodatage du visiteur transmis dans le payload.
-- **Non bloquant** : socket « write-and-forget » (environ 1 ms perçu par la page), repli cURL avec timeout de 400 ms si les sockets sortants sont désactivés.
-- **Jamais d'exception** : tout échec (endpoint injoignable, payload trop gros, contexte absent) est silencieux. L'analytics ne casse jamais le site hôte.
+- **Compact payload**: short keys (`k`, `t`, `u`, `n`, `r`, `l`, `p`), capped at 4 KB. Full spec: `docs/05-api-et-sdk.md` at the monorepo root.
+- **Signed mode**: with the secret key, every hit ships with the `X-QM-Timestamp` and `X-QM-Signature` headers (HMAC-SHA256 of `timestamp.body`). This is the only thing that authorises the collection server to honour the visitor IP, User-Agent and timestamp carried in the payload.
+- **Non-blocking**: "write-and-forget" socket (about 1 ms as perceived by the page), cURL fallback with a 400 ms timeout when outgoing sockets are disabled.
+- **Never throws**: every failure (unreachable endpoint, oversized payload, missing context) is silent. Analytics never breaks the host site.
 
-Compatibilité : PHP >= 7.4, extension `ext-json` uniquement (`ext-curl` suggérée pour le transport de repli). Tests : `composer test` (PHPUnit contre un vrai serveur HTTP de capture, voir `tests/`).
+Compatibility: PHP >= 7.4, `ext-json` only (`ext-curl` suggested for the fallback transport). Tests: `composer test` (PHPUnit against a real HTTP capture server, see `tests/`).
 
-## Licence
+## License
 
 MIT.
