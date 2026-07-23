@@ -21,8 +21,10 @@ Avant la publication sur Packagist (bêta privée), installez depuis le dépôt 
 ```
 
 ```bash
-composer require quiet-metrics/php-metrics:@dev
+composer require quiet-metrics/php-metrics:^1.0
 ```
+
+(Le dépôt est tagué : la contrainte stable suffit, pas besoin de `@dev`.)
 
 ## Configuration
 
