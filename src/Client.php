@@ -45,7 +45,7 @@ final class Client
     {
         $this->publicKey = $publicKey;
         $this->secretKey = $secretKey;
-        $this->endpoint = $options['endpoint'] ?? 'https://app.quietmetrics.dev/api/v1/collect';
+        $this->endpoint = $options['endpoint'] ?? 'https://quietmetrics.dev/api/v1/collect';
         $this->timeoutMs = max(50, (int) ($options['timeout_ms'] ?? 400));
         $this->async = (bool) ($options['async'] ?? true);
         $this->trustProxyHeaders = (bool) ($options['trust_proxy_headers'] ?? false);
@@ -83,6 +83,11 @@ final class Client
     private function send(string $type, ?string $name, array $props, array $overrides): void
     {
         try {
+            if ($this->publicKey === '') {
+                return; // clé absente (env non configuré) : aucun hit ne partirait
+                        // valide, on économise la requête sur chaque page.
+            }
+
             $ctx = array_merge($this->requestContext(), $this->defaults, $overrides);
 
             $payload = [

@@ -175,4 +175,21 @@ final class ClientTest extends TestCase
         $this->assertSame('qm_pub_test', json_decode($requests[0]['body'], true)['k']);
         $this->assertArrayHasKey('x-qm-signature', $requests[0]['headers']);
     }
+
+    public function test_cle_publique_vide_aucun_envoi(): void
+    {
+        // Env non configuré (pont Laravel sans QUIET_METRICS_PUBLIC_KEY, par
+        // exemple) : aucun hit valide ne pourrait partir, on économise la
+        // requête sur chaque page plutôt que d'arroser le serveur de 400.
+        $this->fakeRequest();
+
+        $client = new Client('', 'qm_sec_secret', [
+            'endpoint' => self::$server->endpoint(),
+            'async' => false,
+        ]);
+        $client->pageview();
+        $client->event('achat', ['montant' => 49]);
+
+        $this->assertSame([], self::$server->requests(1, 400), 'clé vide : rien ne part');
+    }
 }

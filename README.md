@@ -1,6 +1,6 @@
 # quiet-metrics/php-metrics
 
-SDK PHP pur de [Quiet Metrics](https://app.quietmetrics.dev) (La Boîte à Code) : mesure d'audience sans cookie, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 7.4 (mutualisés et WordPress inclus).
+SDK PHP pur de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : mesure d'audience sans cookie, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 7.4 (mutualisés et WordPress inclus).
 
 C'est aussi la fondation des ponts framework : [`quiet-metrics/laravel-metrics`](../laravel) et [`quiet-metrics/symfony-metrics`](../symfony) dépendent de ce package.
 
@@ -26,13 +26,20 @@ composer require quiet-metrics/php-metrics:@dev
 
 ## Configuration
 
-Le constructeur prend la clé publique du site, la clé secrète (optionnelle mais recommandée : elle active le mode signé) et un tableau d'options :
+Le constructeur prend la clé publique du site, la clé secrète et un tableau d'options.
+
+> **La clé secrète est indispensable en envoi serveur.** Elle active le mode
+> signé (HMAC), seul cas où la plateforme fait confiance à l'IP et au
+> User-Agent du visiteur transmis dans le payload. Sans elle, chaque hit est
+> attribué à l'adresse IP de VOTRE serveur : tous vos visiteurs n'en
+> compteraient qu'un seul. Ne l'omettez que derrière le proxy first-party
+> (`examples/qm-proxy.php`), qui signe lui-même.
 
 ```php
 use QuietMetrics\Client;
 
 $qm = new Client('qm_pub_demo', 'qm_sec_xxx', [
-    'endpoint' => 'https://app.quietmetrics.dev/api/v1/collect', // défaut
+    'endpoint' => 'https://quietmetrics.dev/api/v1/collect', // défaut
     'timeout_ms' => 400,             // délai max consenti à l'envoi (min 50)
     'async' => true,                 // socket fire-and-forget ; false = cURL synchrone court
     'trust_proxy_headers' => false,  // true si l'app est derrière un reverse proxy / CDN

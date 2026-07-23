@@ -17,7 +17,7 @@
  *      <script defer src="/qm.js" data-site="qm_pub_…" data-endpoint="/qm-proxy.php"></script>
  */
 
-const QM_ENDPOINT = 'https://app.quietmetrics.dev/api/v1/collect';
+const QM_ENDPOINT = 'https://quietmetrics.dev/api/v1/collect';
 const QM_SECRET   = '';   // qm_sec_… (recommandé : active le mode signé)
 const QM_MAX_BODY = 4096; // octets
 

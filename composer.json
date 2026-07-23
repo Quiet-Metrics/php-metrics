@@ -1,6 +1,5 @@
 {
     "name": "quiet-metrics/php-metrics",
-    "version": "1.0.x-dev",
     "description": "Package cœur Quiet Metrics (PHP pur) : mesure d'audience sans cookies, 100 % côté serveur, imblocable par les adblockers. Fondation des ponts Laravel et Symfony.",
     "type": "library",
     "license": "MIT",
