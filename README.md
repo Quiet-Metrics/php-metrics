@@ -25,7 +25,7 @@ Before the Packagist release (private beta), install from the GitHub repository 
 ```
 
 ```bash
-composer require quiet-metrics/php-metrics:^1.0
+composer require quiet-metrics/php-metrics:^0.1
 ```
 
 (The repository is tagged: the stable constraint is enough, no need for `@dev`.)
@@ -103,4 +103,4 @@ Compatibility: PHP >= 7.4, `ext-json` only (`ext-curl` suggested for the fallbac
 
 ## License
 
-MIT.
+MIT. A [La Boîte à Code](https://laboiteacode.fr) product for [Quiet Metrics](https://quietmetrics.dev).

@@ -3,6 +3,17 @@
     "description": "Package cœur Quiet Metrics (PHP pur) : mesure d'audience sans cookies, 100 % côté serveur, imblocable par les adblockers. Fondation des ponts Laravel et Symfony.",
     "type": "library",
     "license": "MIT",
+    "homepage": "https://quietmetrics.dev",
+    "authors": [
+        {
+            "name": "Alexandre Ribes (La Boîte à Code)",
+            "homepage": "https://laboiteacode.fr"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/Quiet-Metrics/php-metrics/issues",
+        "source": "https://github.com/Quiet-Metrics/php-metrics"
+    },
     "keywords": [
         "analytics",
         "privacy",
@@ -35,7 +46,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "1.0.x-dev"
+            "dev-main": "0.1.x-dev"
         }
     },
     "config": {

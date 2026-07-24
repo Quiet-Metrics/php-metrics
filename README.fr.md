@@ -25,7 +25,7 @@ Avant la publication sur Packagist (bêta privée), installez depuis le dépôt 
 ```
 
 ```bash
-composer require quiet-metrics/php-metrics:^1.0
+composer require quiet-metrics/php-metrics:^0.1
 ```
 
 (Le dépôt est tagué : la contrainte stable suffit, pas besoin de `@dev`.)
@@ -103,4 +103,4 @@ Compatibilité : PHP >= 7.4, extension `ext-json` uniquement (`ext-curl` suggér
 
 ## Licence
 
-MIT.
+MIT. Un produit [La Boîte à Code](https://laboiteacode.fr) pour [Quiet Metrics](https://quietmetrics.dev).
