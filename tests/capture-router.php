@@ -1,6 +1,18 @@
 <?php
 
 // Routeur du serveur PHP intégré : capture chaque requête en JSON-lines.
+
+// Sonde de démarrage. Le jeton prouve à CaptureServer que c'est bien CE
+// serveur qui répond sur le port, et non un squatteur qui l'aurait raflé
+// entre la réservation du port et le bind. Répondu avant la capture : la
+// sonde ne doit jamais polluer le journal.
+if (($_SERVER['REQUEST_URI'] ?? '') === '/__pret') {
+    header('Content-Type: text/plain');
+    echo (string) getenv('WA_CAPTURE_READY');
+
+    return;
+}
+
 $headers = [];
 foreach ($_SERVER as $key => $value) {
     if (strpos($key, 'HTTP_') === 0) {
