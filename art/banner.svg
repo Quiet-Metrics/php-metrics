@@ -8,14 +8,14 @@
     <rect x="1264" y="205" width="88" height="235" rx="30" fill="#E0E4D4"/>
     <rect x="1378" y="290" width="88" height="150" rx="30" fill="#DADFC9"/>
   </g>
-  <!-- Logo : carré sauge, trois barres décroissantes crème (brand-mark ×4.31) -->
-  <g transform="translate(96,86)">
-    <rect width="112" height="112" rx="30" fill="#5A6B4D"/>
-    <rect x="28" y="34.5" width="13" height="47.5" rx="6.5" fill="#F4F1EA"/>
-    <rect x="49.5" y="49.5" width="13" height="32.5" rx="6.5" fill="#F4F1EA"/>
-    <rect x="71" y="62.5" width="13" height="19.5" rx="6.5" fill="#F4F1EA"/>
+  <!-- Marque Quiet Systems : anneau encre, queue produit qui le traverse. -->
+  <g transform="translate(96,86) scale(2.333333)">
+    <g fill="none" stroke-width="4.2" stroke-linecap="round">
+      <path d="M28.75 37.80L28.27 37.96L27.78 38.10L27.28 38.23L26.79 38.33L26.28 38.42L25.78 38.49L25.27 38.54L24.76 38.58L24.25 38.60L23.75 38.60L23.24 38.58L22.73 38.54L22.22 38.49L21.72 38.42L21.21 38.33L20.72 38.23L20.22 38.10L19.73 37.96L19.25 37.80L18.77 37.63L18.30 37.44L17.83 37.23L17.37 37.01L16.92 36.77L16.48 36.51L16.05 36.24L15.63 35.96L15.21 35.66L14.81 35.35L14.42 35.02L14.04 34.68L13.68 34.32L13.32 33.96L12.98 33.58L12.65 33.19L12.34 32.79L12.04 32.37L11.76 31.95L11.49 31.52L11.23 31.08L10.99 30.63L10.77 30.17L10.56 29.70L10.37 29.23L10.20 28.75L10.04 28.27L9.90 27.78L9.77 27.28L9.67 26.79L9.58 26.28L9.51 25.78L9.46 25.27L9.42 24.76L9.40 24.25L9.40 23.75L9.42 23.24L9.46 22.73L9.51 22.22L9.58 21.72L9.67 21.21L9.77 20.72L9.90 20.22L10.04 19.73L10.20 19.25L10.37 18.77L10.56 18.30L10.77 17.83L10.99 17.37L11.23 16.92L11.49 16.48L11.76 16.05L12.04 15.63L12.34 15.21L12.65 14.81L12.98 14.42L13.32 14.04L13.68 13.68L14.04 13.32L14.42 12.98L14.81 12.65L15.21 12.34L15.63 12.04L16.05 11.76L16.48 11.49L16.92 11.23L17.37 10.99L17.83 10.77L18.30 10.56L18.77 10.37L19.25 10.20L19.73 10.04L20.22 9.90L20.72 9.77L21.21 9.67L21.72 9.58L22.22 9.51L22.73 9.46L23.24 9.42L23.75 9.40L24.25 9.40L24.76 9.42L25.27 9.46L25.78 9.51L26.28 9.58L26.79 9.67L27.28 9.77L27.78 9.90L28.27 10.04L28.75 10.20L29.23 10.37L29.70 10.56L30.17 10.77L30.63 10.99L31.08 11.23L31.52 11.49L31.95 11.76L32.37 12.04L32.79 12.34L33.19 12.65L33.58 12.98L33.96 13.32L34.32 13.68L34.68 14.04L35.02 14.42L35.35 14.81L35.66 15.21L35.96 15.63L36.24 16.05L36.51 16.48L36.77 16.92L37.01 17.37L37.23 17.83L37.44 18.30L37.63 18.77L37.80 19.25L37.96 19.73L38.10 20.22L38.23 20.72L38.33 21.21L38.42 21.72L38.49 22.22L38.54 22.73L38.58 23.24L38.60 23.75L38.60 24.25L38.58 24.76L38.54 25.27L38.49 25.78L38.42 26.28L38.33 26.79L38.23 27.28L38.10 27.78L37.96 28.27L37.80 28.75" stroke="#1B1A16"/>
+      <path d="M27.89 27.89 L38.50 38.50" stroke="#5A6B4D"/>
+    </g>
   </g>
-  <text x="240" y="162" font-family="Hanken Grotesk, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="64" font-weight="700" letter-spacing="-1.5" fill="#1B1A16">Quiet<tspan dx="14" font-weight="400" fill="#6C685E">Metrics</tspan></text>
+  <text x="240" y="162" font-family="Hanken Grotesk, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="64" letter-spacing="-1.5"><tspan font-weight="300" fill="#1B1A16">Quiet</tspan><tspan font-weight="600" fill="#5A6B4D">Metrics</tspan></text>
   <text x="96" y="330" font-family="Hanken Grotesk, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="92" font-weight="700" letter-spacing="-2.5" fill="#485838">PHP SDK</text>
   <text x="98" y="396" font-family="IBM Plex Mono, Menlo, Monaco, monospace" font-size="28" fill="#6C685E">Cookie-free analytics · 100 % server-side · Privacy-first</text>
   <text x="98" y="452" font-family="Hanken Grotesk, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" font-weight="600" fill="#485838">quietmetrics.dev</text>
