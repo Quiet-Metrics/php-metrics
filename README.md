@@ -14,22 +14,6 @@ It is also the foundation of the framework bridges: [`quiet-metrics/laravel-metr
 composer require quiet-metrics/php-metrics
 ```
 
-Before the Packagist release, install from the GitHub repository:
-
-```json
-{
-    "repositories": [
-        { "type": "vcs", "url": "https://github.com/Quiet-Metrics/php-metrics" }
-    ]
-}
-```
-
-```bash
-composer require quiet-metrics/php-metrics:^0.1
-```
-
-(The repository is tagged: the stable constraint is enough, no need for `@dev`.)
-
 ## Configuration
 
 The constructor takes the site's public key, the secret key and an options array.

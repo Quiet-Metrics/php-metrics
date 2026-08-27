@@ -14,22 +14,6 @@ C'est aussi la fondation des ponts framework : [`quiet-metrics/laravel-metrics`]
 composer require quiet-metrics/php-metrics
 ```
 
-Avant la publication sur Packagist, installez depuis le dépôt GitHub :
-
-```json
-{
-    "repositories": [
-        { "type": "vcs", "url": "https://github.com/Quiet-Metrics/php-metrics" }
-    ]
-}
-```
-
-```bash
-composer require quiet-metrics/php-metrics:^0.1
-```
-
-(Le dépôt est tagué : la contrainte stable suffit, pas besoin de `@dev`.)
-
 ## Configuration
 
 Le constructeur prend la clé publique du site, la clé secrète et un tableau d'options.

@@ -5,6 +5,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 
 ## [Unreleased]
 
+### Changed
+- README: the package is on Packagist, so installing it no longer needs a VCS repository entry.
+
 ## [0.1.1] - 2026-08-27
 
 Documentation, artwork and test harness only. The library code is unchanged since 0.1.0.
