@@ -14,7 +14,7 @@ C'est aussi la fondation des ponts framework : [`quiet-metrics/laravel-metrics`]
 composer require quiet-metrics/php-metrics
 ```
 
-Avant la publication sur Packagist (bêta privée), installez depuis le dépôt GitHub (accès requis) :
+Avant la publication sur Packagist, installez depuis le dépôt GitHub :
 
 ```json
 {

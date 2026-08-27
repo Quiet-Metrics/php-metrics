@@ -5,6 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-27
+
+Documentation, artwork and test harness only. The library code is unchanged since 0.1.0.
+
+### Changed
+- Banner redrawn to the current brand: product typefaces instead of two webfonts that were never part of the design system, the damped wave instead of the pre-redesign bars, and the title in ink rather than in the accent colour.
+- README: the pre-Packagist install note no longer says that access to the repository is required. It is public.
+
+### Fixed
+- The test capture server no longer guesses its port, which made the producer-to-consumer contract tests fail intermittently.
+
 ## [0.1.0] - 2026-07-24
 
 First tagged release (private beta), after a full pre-publication review.

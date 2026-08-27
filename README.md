@@ -14,7 +14,7 @@ It is also the foundation of the framework bridges: [`quiet-metrics/laravel-metr
 composer require quiet-metrics/php-metrics
 ```
 
-Before the Packagist release (private beta), install from the GitHub repository (access required):
+Before the Packagist release, install from the GitHub repository:
 
 ```json
 {
