@@ -95,9 +95,24 @@ L'appel est statique, sans effet quand l'URL ne demande rien, et silencieux si l
 
 Il ne contient aucun identifiant (sa valeur est la même chez tout le monde), il n'est jamais transmis à Quiet Metrics, et il n'existe que pour arrêter la mesure : c'est un marqueur de refus, pas un traceur. Le tracker JS écrit en plus la même valeur en `localStorage`, mais un SDK serveur ne lit que le cookie : une seule visite suffit donc pour les deux modes de suivi.
 
+## Continuité de visite
+
+Quand l'empreinte visiteur change en cours de visite (4G puis wifi), la même personne compterait sinon pour deux visiteurs uniques le même jour. Un second **cookie propriétaire de votre site** ferme cet écart : `qm_visit`, valant `1` (`path=/`, `samesite=lax`, `secure` en https), sur une fenêtre glissante de dix minutes repoussée à chaque hit mesuré. Chaque hit reporte dans la clé `c` du payload s'il était déjà là.
+
+Sa valeur est constante, la même chez tout le monde : elle n'identifie personne, elle dit seulement qu'une visite est déjà en cours sur ce navigateur. Il n'est jamais écrit chez quelqu'un qui a posé le marqueur d'exclusion, ni quand rien n'est mesuré.
+
+Sa lecture est automatique. L'ouverture de la fenêtre tient en une ligne, à n'appeler que pour un hit mesuré, tôt dans la requête et avant tout envoi de sortie ; elle rend l'état d'avant, à transmettre plutôt qu'à relire sur le cookie qu'on vient de rafraîchir :
+
+```php
+$enCours = \QuietMetrics\Client::handleVisitRequest();
+$qm->pageview(['visit' => $enCours]);
+```
+
+À savoir si votre site est mis en cache : une réponse mesurée porte désormais un en-tête `Set-Cookie`, que certains reverse proxys et CDN prennent comme une raison de ne pas stocker la réponse.
+
 ## Comment ça marche
 
-- **Payload compact** : clés courtes (`k`, `t`, `u`, `n`, `r`, `l`, `p`), plafonné à 4 Ko. Spec complète : `docs/05-api-et-sdk.md` à la racine du monorepo.
+- **Payload compact** : clés courtes (`k`, `t`, `u`, `n`, `r`, `l`, `p`, `c`), plafonné à 4 Ko. Spec complète : `docs/05-api-et-sdk.md` à la racine du monorepo.
 - **Mode signé** : avec la clé secrète, chaque hit part avec les en-têtes `X-QM-Timestamp` et `X-QM-Signature` (HMAC-SHA256 de `timestamp.corps`). C'est la seule chose qui autorise le serveur de collecte à honorer l'IP, le User-Agent et l'horodatage du visiteur transmis dans le payload.
 - **Non bloquant** : socket « write-and-forget » (environ 1 ms perçu par la page), repli cURL avec timeout de 400 ms si les sockets sortants sont désactivés.
 - **Jamais d'exception** : tout échec (endpoint injoignable, payload trop gros, contexte absent) est silencieux. L'analytics ne casse jamais le site hôte.

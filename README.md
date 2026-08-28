@@ -95,9 +95,24 @@ The call is static, does nothing when the URL asks for nothing, and stays silent
 
 It holds no identifier (its value is the same for everyone), it is never transmitted to Quiet Metrics, and it exists only to stop measurement: it is an opt-out marker, not a tracker. The JS tracker additionally writes the same value to `localStorage`, but a server-side SDK only ever reads the cookie: one visit therefore covers both tracking modes.
 
+## Visit continuity
+
+When the visitor fingerprint changes mid-visit (4G, then wifi), the same person would otherwise be counted as two unique visitors on the same day. A second **first-party cookie of your own site** closes that gap: `qm_visit`, value `1` (`path=/`, `samesite=lax`, `secure` over https), on a sliding ten-minute window pushed back by every measured hit. Each hit reports whether it was already there as the `c` key of the payload.
+
+Reading it is automatic. Opening the window is one line, to be called for a measured hit only, early in the request and before any output; it returns whether a visit was already under way, so pass that on rather than re-reading the cookie you have just refreshed:
+
+```php
+$ongoing = \QuietMetrics\Client::handleVisitRequest();
+$qm->pageview(['visit' => $ongoing]);
+```
+
+Its value is a constant, the same for everyone, so it identifies nobody: it only says that a visit is already under way in this browser. It is never written to someone who has set the opt-out marker, and never written when nothing is measured.
+
+Note for cached sites: a measured response now carries a `Set-Cookie` header, which some reverse proxies and CDNs treat as a reason not to store the response.
+
 ## How it works
 
-- **Compact payload**: short keys (`k`, `t`, `u`, `n`, `r`, `l`, `p`), capped at 4 KB. Full spec: `docs/05-api-et-sdk.md` at the monorepo root.
+- **Compact payload**: short keys (`k`, `t`, `u`, `n`, `r`, `l`, `p`, `c`), capped at 4 KB. Full spec: `docs/05-api-et-sdk.md` at the monorepo root.
 - **Signed mode**: with the secret key, every hit ships with the `X-QM-Timestamp` and `X-QM-Signature` headers (HMAC-SHA256 of `timestamp.body`). This is the only thing that authorises the collection server to honour the visitor IP, User-Agent and timestamp carried in the payload.
 - **Non-blocking**: "write-and-forget" socket (about 1 ms as perceived by the page), cURL fallback with a 400 ms timeout when outgoing sockets are disabled.
 - **Never throws**: every failure (unreachable endpoint, oversized payload, missing context) is silent. Analytics never breaks the host site.

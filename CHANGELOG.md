@@ -3,6 +3,15 @@
 All notable changes to `quiet-metrics/php-metrics` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org).
 
+## [0.3.0] - 2026-08-28
+
+### Added
+- **Visit continuity cookie.** The visitor fingerprint is recomputed on every hit from the subscriber network and the browser. When that network changes MID-VISIT (switching from mobile data to wifi), the fingerprint changes and the same person was counted as two unique visitors on the same day. `qm_visit` closes that: a first-party cookie of the tracked site, value `1`, sliding ten-minute window refreshed on each hit (`path=/`, `samesite=lax`, `secure` over https). It holds no identifier, its value being the same for everyone, and it is never set for someone who has opted out. Only its presence travels, as the `c` boolean of the payload.
+
+### Changed
+- `VISIT_MARKER`, `VISIT_LIFETIME` and `handleVisitRequest()` added alongside the opt-out helpers. Unlike `handleOptOutRequest()`, it does not touch `$_COOKIE`: the hit sent later must read the state as it was BEFORE this request opened the window.
+- Minor version bump to 0.3.0: the bridges pin `^0.3`.
+
 ## [0.2.0] - 2026-08-28
 
 ### Added
