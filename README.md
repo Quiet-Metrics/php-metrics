@@ -4,7 +4,7 @@
 
 > 🇫🇷 [Version française](README.fr.md)
 
-Plain-PHP SDK for [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code): cookie-free audience measurement, sent 100% from your server, hence invisible to ad blockers. Zero dependencies, compatible with PHP >= 7.4 (shared hosting and WordPress included).
+Plain-PHP SDK for [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code): audience measurement with no identification or tracking cookies, sent 100% from your server, hence invisible to ad blockers. Zero dependencies, compatible with PHP >= 7.4 (shared hosting and WordPress included).
 
 It is also the foundation of the framework bridges: [`quiet-metrics/laravel-metrics`](https://github.com/Quiet-Metrics/laravel-metrics) and [`quiet-metrics/symfony-metrics`](https://github.com/Quiet-Metrics/symfony-metrics) depend on this package.
 
@@ -75,6 +75,25 @@ Accepted overrides are `url`, `referrer`, `ip`, `ua`, `lang` and `ts`; they take
 ```
 
 The three constants to fill in (`QM_ENDPOINT`, `QM_SECRET`, `QM_MAX_BODY`) are documented in the file header.
+
+## Opting out of measurement
+
+A visitor can ask to stop being counted, with no account and without writing to anyone: they visit a page of your site with `?qm_ignore=1`, and `?qm_ignore=0` puts them back into measurement.
+
+```
+https://mysite.com/?qm_ignore=1     stop being counted
+https://mysite.com/?qm_ignore=0     be counted again
+```
+
+The marker is a **first-party cookie of your own site**, named `qm_ignore` with the value `1` (`path=/`, `samesite=lax`, `secure` over https, five years). Reading it is automatic: while the marker is there, `pageview()` and `event()` send nothing. Writing it is one line, to be called early in the request and before any output, since storing or clearing a cookie writes an HTTP header:
+
+```php
+\QuietMetrics\Client::handleOptOutRequest();
+```
+
+The call is static, does nothing when the URL asks for nothing, and stays silent when headers have already been sent: per the package contract, it never breaks the host site.
+
+It holds no identifier (its value is the same for everyone), it is never transmitted to Quiet Metrics, and it exists only to stop measurement: it is an opt-out marker, not a tracker. The JS tracker additionally writes the same value to `localStorage`, but a server-side SDK only ever reads the cookie: one visit therefore covers both tracking modes.
 
 ## How it works
 

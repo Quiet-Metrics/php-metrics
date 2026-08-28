@@ -4,7 +4,7 @@
 
 > 🇬🇧 [English version](README.md)
 
-SDK PHP pur de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : mesure d'audience sans cookie, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 7.4 (mutualisés et WordPress inclus).
+SDK PHP pur de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : mesure d'audience sans cookie d'identification ni de traçabilité, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 7.4 (mutualisés et WordPress inclus).
 
 C'est aussi la fondation des ponts framework : [`quiet-metrics/laravel-metrics`](https://github.com/Quiet-Metrics/laravel-metrics) et [`quiet-metrics/symfony-metrics`](https://github.com/Quiet-Metrics/symfony-metrics) dépendent de ce package.
 
@@ -75,6 +75,25 @@ Les surcharges acceptées sont `url`, `referrer`, `ip`, `ua`, `lang` et `ts` ; e
 ```
 
 Les trois constantes à renseigner (`QM_ENDPOINT`, `QM_SECRET`, `QM_MAX_BODY`) sont documentées dans l'en-tête du fichier.
+
+## S'exclure de la mesure
+
+Un visiteur peut demander à ne plus être compté, sans compte et sans écrire à personne : il visite une page de votre site avec `?qm_ignore=1`, et `?qm_ignore=0` le remet dans la mesure.
+
+```
+https://monsite.fr/?qm_ignore=1     ne plus être compté
+https://monsite.fr/?qm_ignore=0     être compté à nouveau
+```
+
+Le marqueur est un **cookie propriétaire de votre site**, nommé `qm_ignore` et valant `1` (`path=/`, `samesite=lax`, `secure` en https, cinq ans). La lecture est automatique : tant que le marqueur est là, `pageview()` et `event()` n'envoient rien. L'écriture, elle, se branche en une ligne, à appeler tôt dans la requête et avant tout envoi de sortie, poser ou retirer un cookie écrivant un en-tête HTTP :
+
+```php
+\QuietMetrics\Client::handleOptOutRequest();
+```
+
+L'appel est statique, sans effet quand l'URL ne demande rien, et silencieux si les en-têtes sont déjà partis : conformément au contrat du package, il ne casse jamais le site hôte.
+
+Il ne contient aucun identifiant (sa valeur est la même chez tout le monde), il n'est jamais transmis à Quiet Metrics, et il n'existe que pour arrêter la mesure : c'est un marqueur de refus, pas un traceur. Le tracker JS écrit en plus la même valeur en `localStorage`, mais un SDK serveur ne lit que le cookie : une seule visite suffit donc pour les deux modes de suivi.
 
 ## Comment ça marche
 

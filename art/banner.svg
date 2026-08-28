@@ -22,7 +22,7 @@
        l'icone et au petit aplat ; les titres sont en encre pleine. Serif 400,
        comme le display du site. -->
   <text x="96" y="318" font-family="Iowan Old Style, Palatino Linotype, Georgia, serif" font-size="98" font-weight="400" letter-spacing="-1.5" fill="#1B1A16">PHP SDK</text>
-  <text x="99" y="382" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#6C685E">Cookie-free · 100 % server-side · Zero dependencies · PHP &gt;= 7.4</text>
+  <text x="99" y="382" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#6C685E">No tracking cookies · 100 % server-side · Zero dependencies · PHP &gt;= 7.4</text>
   <text x="99" y="440" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="25" font-weight="600" fill="#485838">quietmetrics.dev</text>
 
   <rect y="492" width="1544" height="8" fill="#5A6B4D"/>
