@@ -6,7 +6,7 @@ namespace QuietMetrics;
 
 /**
  * Client de collecte Quiet Metrics : tracking 100 % côté serveur,
- * sans cookie.
+ * sans cookie d'identification ni de traçabilité.
  *
  * Compatible PHP >= 7.4, zéro dépendance (adoption maximale : mutualisés,
  * WordPress, vieux projets). Spec du payload : docs/05-api-et-sdk.md.
@@ -20,6 +20,24 @@ namespace QuietMetrics;
  */
 final class Client
 {
+    /**
+     * Marqueur d'exclusion, sous ce nom comme cookie et comme paramètre d'URL.
+     *
+     * Le SEUL écrit de Quiet Metrics chez le visiteur, et il sert à NE PAS
+     * compter. Voir isOptedOut() pour ce qui le sépare d'un cookie
+     * d'identification ou de traçabilité.
+     */
+    public const OPT_OUT_MARKER = 'qm_ignore';
+
+    /**
+     * Durée de vie du marqueur : cinq ans, en secondes.
+     *
+     * La même que le max-age posé par le traceur JS
+     * (packages/tracker-js/tracker.js) : un refus ne doit pas expirer d'un
+     * côté avant l'autre selon le mode de suivi du site.
+     */
+    public const OPT_OUT_LIFETIME = 157680000;
+
     private string $publicKey;
 
     private ?string $secretKey;
@@ -137,13 +155,184 @@ final class Client
     }
 
     /**
-     * Contexte déduit de la requête courante (vide en CLI).
+     * Le client annonce-t-il un préchargement plutôt qu'une visite ?
+     *
+     * Quand le visiteur tape une adresse, Chrome charge fréquemment la page à
+     * l'avance : une vraie requête GET qui renvoie un vrai 200, mais qu'aucun
+     * humain ne voit tant que la navigation n'est pas confirmée. Mesurée côté
+     * serveur elle fabriquait une page vue, parfois un visiteur, et restait
+     * invisible pour un traceur JS puisqu'une page préchargée n'exécute pas
+     * ses scripts avant activation. C'est une source d'écart entre les deux
+     * méthodes, et elle penche toujours du même côté.
+     *
+     * Trois en-têtes couvrent le parc : `Sec-Purpose` (forme actuelle,
+     * `prefetch` ou `prefetch;prerender`), `Purpose` (Chrome plus ancien) et
+     * `X-Moz` (Firefox).
+     *
+     * La VALEUR est lue, et pas la seule présence de l'en-tête : `Sec-Purpose`
+     * est un en-tête structuré dont la spécification prévoit d'autres jetons,
+     * et se contenter de sa présence ferait disparaître des visites réelles au
+     * premier que le navigateur ajoutera.
+     *
+     * Publique et statique parce que les intégrations Laravel et Symfony
+     * doivent poser la même question SANS passer par les superglobales : sous
+     * Octane, RoadRunner ou FrankenPHP, `$_SERVER` peut appartenir à une
+     * requête précédente.
+     */
+    public static function announcesPrefetch(?string ...$headerValues): bool
+    {
+        foreach ($headerValues as $value) {
+            if ($value === null) {
+                continue;
+            }
+            // `strpos` et non `str_contains` : ce fichier tient un contrat
+            // « PHP >= 7.4 » (mutualisés, WordPress, vieux projets) et
+            // `str_contains` est arrivé en 8.0. L'écart aurait été MUET :
+            // `send()` avale tout dans un `catch (\Throwable)`, donc un
+            // « Call to undefined function » y aurait simplement arrêté toute
+            // émission, sans erreur visible nulle part.
+            $value = strtolower($value);
+            if (strpos($value, 'prefetch') !== false || strpos($value, 'prerender') !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * La personne a-t-elle posé le marqueur d'exclusion ?
+     *
+     * `qm_ignore=1` est le marqueur de refus : la personne le pose elle-même
+     * en visitant n'importe quelle URL du site avec `?qm_ignore=1`, et le
+     * retire avec `?qm_ignore=0`. Il ne contient AUCUN identifiant, n'est
+     * JAMAIS transmis à Quiet Metrics, et n'existe que pour ARRÊTER la mesure.
+     * C'est ce qui le sépare d'un cookie d'identification ou de traçabilité,
+     * et ce qui l'exempte de consentement.
+     *
+     * Seule la valeur `1` exclut, comme la lit le traceur JS. Se contenter de
+     * la PRÉSENCE du cookie ferait disparaître des visites réelles :
+     * `qm_ignore=0` est justement ce qu'écrit un retrait, et un cookie vidé
+     * par un intermédiaire n'est pas un refus.
+     *
+     * Publique et statique parce que les intégrations Laravel et Symfony
+     * doivent poser la même question SANS passer par les superglobales : sous
+     * Octane, RoadRunner ou FrankenPHP, `$_COOKIE` peut appartenir à une
+     * requête précédente.
+     */
+    public static function isOptedOut(?string $cookieValue): bool
+    {
+        return $cookieValue === '1';
+    }
+
+    /**
+     * Que demande l'URL au sujet du marqueur d'exclusion ?
+     *
+     * Toute valeur autre que `1` et `0` ne dit rien plutôt que de valoir un
+     * retrait : un `?qm_ignore=` tronqué par un partage de lien ne doit pas
+     * remettre dans la mesure quelqu'un qui en était sorti.
+     *
+     * @param string|null $queryValue valeur du paramètre `qm_ignore` de l'URL
+     *
+     * @return bool|null true : poser le marqueur ; false : le retirer ;
+     *                   null : l'URL ne dit rien, un refus déjà posé reste intact
+     */
+    public static function optOutSignal(?string $queryValue): ?bool
+    {
+        if ($queryValue === '1') {
+            return true;
+        }
+
+        if ($queryValue === '0') {
+            return false;
+        }
+
+        return null;
+    }
+
+    /**
+     * Pose ou retire le marqueur d'exclusion demandé par l'URL courante,
+     * en lisant `$_GET` et en écrivant un cookie propriétaire.
+     *
+     * À appeler TÔT dans la requête, AVANT tout envoi de sortie : poser un
+     * cookie écrit un en-tête HTTP, et il est trop tard une fois le corps de
+     * la page commencé. Si la sortie a déjà commencé, l'en-tête est abandonné
+     * en silence plutôt que de faire apparaître un avertissement PHP dans la
+     * page hôte (contrat : ne JAMAIS casser le site hôte).
+     *
+     * `$_COOKIE` est mis à jour dans le processus en plus de l'en-tête, pour
+     * qu'un isOptedOut() ultérieur dans la MÊME requête voie la décision : la
+     * page qui pose le refus ne se compte donc pas elle-même, exactement comme
+     * le traceur JS qui relit son propre cookie avant de décider.
+     *
+     * Réservée aux intégrations sans objet Request (WordPress, PHP nu) :
+     * Laravel et Symfony traitent le même signal sur leur Request et leur
+     * Response, là où `setcookie()` n'écrirait pas dans la bonne réponse sous
+     * un serveur à processus persistants.
+     */
+    public static function handleOptOutRequest(): void
+    {
+        $queryValue = isset($_GET[self::OPT_OUT_MARKER]) && \is_string($_GET[self::OPT_OUT_MARKER])
+            ? $_GET[self::OPT_OUT_MARKER]
+            : null;
+
+        $signal = self::optOutSignal($queryValue);
+        if ($signal === null) {
+            return;
+        }
+
+        if (!headers_sent()) {
+            // `secure` d'après $_SERVER['HTTPS'] seul : X-Forwarded-Proto n'est
+            // pas lu ici, faute d'instance pour dire si le proxy est de
+            // confiance. Un en-tête falsifié poserait un cookie Secure qu'un
+            // site en http ne pourrait pas stocker, et le refus serait
+            // silencieusement perdu ; l'oublier ne coûte qu'un cran de rigueur.
+            $https = $_SERVER['HTTPS'] ?? '';
+
+            setcookie(self::OPT_OUT_MARKER, $signal ? '1' : '', [
+                'expires' => $signal ? time() + self::OPT_OUT_LIFETIME : 1,
+                'path' => '/',
+                'secure' => $https !== '' && $https !== 'off',
+                // Lisible par le traceur JS à dessein : c'est le même marqueur
+                // pour les deux modes de suivi, une seule visite doit couvrir
+                // le mode script comme le mode serveur.
+                'httponly' => false,
+                'samesite' => 'Lax',
+            ]);
+        }
+
+        if ($signal) {
+            $_COOKIE[self::OPT_OUT_MARKER] = '1';
+        } else {
+            unset($_COOKIE[self::OPT_OUT_MARKER]);
+        }
+    }
+
+    /**
+     * Contexte déduit de la requête courante (vide en CLI, vide aussi quand la
+     * requête est un préchargement ou vient d'une personne qui a posé le
+     * marqueur d'exclusion : dans ces cas il n'y a pas de visite à rapporter,
+     * et `send()` abandonne faute d'URL exploitable).
      *
      * @return array<string,mixed>
      */
     private function requestContext(): array
     {
         if (PHP_SAPI === 'cli' && !isset($_SERVER['REQUEST_URI'])) {
+            return [];
+        }
+
+        if (self::announcesPrefetch(
+            $_SERVER['HTTP_SEC_PURPOSE'] ?? null,
+            $_SERVER['HTTP_PURPOSE'] ?? null,
+            $_SERVER['HTTP_X_MOZ'] ?? null,
+        )) {
+            return [];
+        }
+
+        // Le refus de la personne, lu sur son cookie : la mesure s'arrête ici.
+        $marker = $_COOKIE[self::OPT_OUT_MARKER] ?? null;
+        if (self::isOptedOut(\is_string($marker) ? $marker : null)) {
             return [];
         }
 
