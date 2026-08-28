@@ -23,9 +23,9 @@ final class Client
     /**
      * Marqueur d'exclusion, sous ce nom comme cookie et comme paramètre d'URL.
      *
-     * Le SEUL écrit de Quiet Metrics chez le visiteur, et il sert à NE PAS
-     * compter. Voir isOptedOut() pour ce qui le sépare d'un cookie
-     * d'identification ou de traçabilité.
+     * Le seul écrit que Quiet Metrics fasse chez le visiteur à la demande de
+     * la personne, et il sert à NE PAS compter. Voir isOptedOut() pour ce qui
+     * le sépare d'un cookie d'identification ou de traçabilité.
      */
     public const OPT_OUT_MARKER = 'qm_ignore';
 
@@ -37,6 +37,30 @@ final class Client
      * côté avant l'autre selon le mode de suivi du site.
      */
     public const OPT_OUT_LIFETIME = 157680000;
+
+    /**
+     * Cookie de continuité de visite.
+     *
+     * Il vaut `1` chez tout le monde, donc il n'identifie personne : il dit
+     * seulement qu'une visite est déjà en cours sur ce navigateur. Sans lui,
+     * une empreinte visiteur qui change EN COURS DE VISITE (passage de la 4G
+     * au wifi) fait compter la même personne comme deux visiteurs uniques le
+     * même jour. Le hit le reporte dans la clé `c`.
+     *
+     * Il est posé ou rafraîchi à chaque hit mesuré, et JAMAIS chez quelqu'un
+     * qui a posé le marqueur d'exclusion : on n'écrit rien chez une personne
+     * qui a refusé la mesure.
+     */
+    public const VISIT_MARKER = 'qm_visit';
+
+    /**
+     * Durée de la fenêtre de visite : dix minutes, en secondes.
+     *
+     * Glissante, repoussée à chaque hit, et la même que le max-age posé par le
+     * traceur JS (packages/tracker-js/tracker.js) : selon le mode de suivi du
+     * site, une même visite ne doit pas se refermer à deux dates différentes.
+     */
+    public const VISIT_LIFETIME = 600;
 
     private string $publicKey;
 
@@ -75,7 +99,7 @@ final class Client
      * langue) est déduit de la requête HTTP courante, surchargeable :
      * pageview(['url' => …, 'ip' => …]).
      *
-     * @param array{url?:string,referrer?:string,ip?:string,ua?:string,lang?:string,ts?:int} $overrides
+     * @param array{url?:string,referrer?:string,ip?:string,ua?:string,lang?:string,ts?:int,visit?:bool} $overrides
      */
     public function pageview(array $overrides = []): void
     {
@@ -87,7 +111,7 @@ final class Client
      * $props : valeurs scalaires uniquement, ≤ 30 clés (tronqué côté serveur).
      *
      * @param array<string,scalar|null> $props
-     * @param array{url?:string,referrer?:string,ip?:string,ua?:string,lang?:string,ts?:int} $overrides
+     * @param array{url?:string,referrer?:string,ip?:string,ua?:string,lang?:string,ts?:int,visit?:bool} $overrides
      */
     public function event(string $name, array $props = [], array $overrides = []): void
     {
@@ -120,6 +144,10 @@ final class Client
                 'r' => $ctx['referrer'] ?? null,
                 'l' => $ctx['lang'] ?? null,
                 'p' => $props !== [] ? $props : null,
+                // Continuité de visite : `1` quand une visite était déjà en
+                // cours sur ce navigateur AU MOMENT du hit, absent sinon.
+                // Jamais `0` : la clé est optionnelle comme les autres.
+                'c' => !empty($ctx['visit']) ? 1 : null,
                 // En mode signé, l'IP/UA du VISITEUR font foi (pas ceux du
                 // serveur qui exécute ce SDK) ; ignorés sans signature valide.
                 'ip' => $ctx['ip'] ?? null,
@@ -309,6 +337,80 @@ final class Client
     }
 
     /**
+     * Une visite était-elle déjà en cours sur ce navigateur ?
+     *
+     * `qm_visit=1` est une valeur constante, la même chez tout le monde : elle
+     * ne distingue personne, elle dit qu'un hit est déjà parti d'ici il y a
+     * moins de dix minutes. C'est ce qui permet de ne pas compter deux
+     * visiteurs uniques quand l'empreinte change en cours de visite.
+     *
+     * Seule la valeur `1` compte, comme l'écrit le traceur JS. Se contenter de
+     * la PRÉSENCE du cookie ferait passer pour une même visite tout ce qu'un
+     * intermédiaire laisse traîner sous ce nom, et recollerait alors deux
+     * personnes en une : l'erreur inverse de celle que ce cookie corrige.
+     *
+     * Publique et statique pour la même raison qu'isOptedOut() : Laravel et
+     * Symfony doivent poser la question SANS passer par les superglobales.
+     */
+    public static function hasVisit(?string $cookieValue): bool
+    {
+        return $cookieValue === '1';
+    }
+
+    /**
+     * Ouvre ou prolonge la fenêtre de visite pour la requête courante, et dit
+     * si elle était déjà ouverte AVANT.
+     *
+     * L'ordre n'est pas négociable : la réponse décrit l'état au moment du
+     * hit, sans quoi le hit qui suit se déclarerait toujours en continuité,
+     * puisque c'est lui-même qui vient d'ouvrir la fenêtre.
+     *
+     * `$_COOKIE` n'est PAS mis à jour, à l'inverse de handleOptOutRequest() :
+     * l'envoi part plus tard dans la requête (sur `shutdown` côté WordPress)
+     * et doit lire l'état d'avant, pas celui qu'on vient d'écrire.
+     *
+     * Rien n'est écrit chez quelqu'un qui a posé le marqueur d'exclusion. Les
+     * appelants ne devraient déjà appeler cette méthode que pour un hit
+     * mesuré, et un hit ne part pas pour une personne exclue : cette garde
+     * tient même si un appelant l'oublie.
+     *
+     * À appeler AVANT tout envoi de sortie, comme handleOptOutRequest(), et
+     * réservée comme elle aux intégrations sans objet Request (WordPress, PHP
+     * nu) : sous un serveur à processus persistants, `setcookie()` n'écrirait
+     * pas dans la bonne réponse.
+     */
+    public static function handleVisitRequest(): bool
+    {
+        $marker = $_COOKIE[self::OPT_OUT_MARKER] ?? null;
+        if (self::isOptedOut(\is_string($marker) ? $marker : null)) {
+            return false;
+        }
+
+        $visit = $_COOKIE[self::VISIT_MARKER] ?? null;
+        $ongoing = self::hasVisit(\is_string($visit) ? $visit : null);
+
+        if (!headers_sent()) {
+            // `secure` d'après $_SERVER['HTTPS'] seul, pour la même raison que
+            // le marqueur d'exclusion : sans instance, rien ne dit ici si le
+            // proxy est de confiance.
+            $https = $_SERVER['HTTPS'] ?? '';
+
+            setcookie(self::VISIT_MARKER, '1', [
+                'expires' => time() + self::VISIT_LIFETIME,
+                'path' => '/',
+                'secure' => $https !== '' && $https !== 'off',
+                // Lisible par le traceur JS à dessein : les deux modes de
+                // suivi partagent la même fenêtre de visite, sinon le mode
+                // « les deux » du plugin WordPress en ouvrirait deux.
+                'httponly' => false,
+                'samesite' => 'Lax',
+            ]);
+        }
+
+        return $ongoing;
+    }
+
+    /**
      * Contexte déduit de la requête courante (vide en CLI, vide aussi quand la
      * requête est un préchargement ou vient d'une personne qui a posé le
      * marqueur d'exclusion : dans ces cas il n'y a pas de visite à rapporter,
@@ -356,12 +458,19 @@ final class Client
             $lang = substr(trim(explode(',', $_SERVER['HTTP_ACCEPT_LANGUAGE'])[0]), 0, 5);
         }
 
+        // Visite déjà en cours sur ce navigateur, lue sur le cookie reçu. Les
+        // ponts Laravel et Symfony surchargent `visit` depuis leur Request :
+        // sous un worker persistant, `$_COOKIE` peut appartenir à la requête
+        // précédente et recollerait deux visiteurs en un.
+        $visit = $_COOKIE[self::VISIT_MARKER] ?? null;
+
         return [
             'url' => $host !== null ? sprintf('%s://%s%s', $https ? 'https' : 'http', $host, $uri) : null,
             'referrer' => $_SERVER['HTTP_REFERER'] ?? null,
             'ip' => $ip,
             'ua' => $_SERVER['HTTP_USER_AGENT'] ?? null,
             'lang' => $lang,
+            'visit' => self::hasVisit(\is_string($visit) ? $visit : null),
         ];
     }
 

@@ -425,4 +425,148 @@ final class ClientTest extends TestCase
 
         $this->assertSame([], self::$server->requests(1, 400));
     }
+
+    /**
+     * Continuite de visite.
+     *
+     * Le cookie `qm_visit` vaut `1` chez tout le monde : il n'identifie
+     * personne, il dit seulement qu'une visite est deja en cours sur ce
+     * navigateur. Le hit le reporte dans `c`, ce qui evite de compter deux
+     * visiteurs uniques quand l'empreinte change en cours de visite (4G puis
+     * wifi). Le SDK serveur doit le lire comme le traceur JS l'ecrit.
+     */
+    public function test_le_cookie_de_visite_porte_le_nom_et_la_duree_attendus(): void
+    {
+        // Fige le contrat cote PHP, et rien de plus : la confrontation avec
+        // packages/tracker-js/tracker.js ne peut vivre ici, ce paquet est
+        // publie seul sur Packagist et ne voit pas le traceur.
+        $this->assertSame('qm_visit', Client::VISIT_MARKER);
+        $this->assertSame(600, Client::VISIT_LIFETIME, 'dix minutes, comme le max-age pose par le traceur JS');
+    }
+
+    /**
+     * Valeurs de cookie qui ne valent PAS une visite en cours.
+     *
+     * @return array<string, array{0:string}>
+     */
+    public static function cookiesQuiNOuvrentPasDeVisite(): array
+    {
+        return [
+            'valeur vide' => [''],
+            'zero' => ['0'],
+            'valeur inconnue' => ['oui'],
+        ];
+    }
+
+    /**
+     * Seule la valeur `1` vaut une visite en cours, comme pour le refus.
+     *
+     * Se contenter de la PRESENCE du cookie ferait passer pour une visite
+     * continue tout ce qu'un intermediaire laisse trainer sous ce nom, et
+     * fusionnerait alors deux personnes en une.
+     */
+    #[DataProvider('cookiesQuiNOuvrentPasDeVisite')]
+    public function test_un_cookie_de_visite_qui_ne_vaut_pas_un_n_ouvre_rien(string $valeur): void
+    {
+        $this->fakeRequest();
+        $_COOKIE[Client::VISIT_MARKER] = $valeur;
+
+        $this->client()->pageview();
+
+        $payload = json_decode(self::$server->requests()[0]['body'], true);
+        $this->assertArrayNotHasKey('c', $payload, 'cookie qm_visit='.$valeur.' : ce n\'est pas une visite en cours');
+    }
+
+    public function test_une_visite_en_cours_ajoute_c_au_payload(): void
+    {
+        $this->fakeRequest();
+        $_COOKIE[Client::VISIT_MARKER] = '1';
+
+        $this->client()->pageview();
+
+        $payload = json_decode(self::$server->requests()[0]['body'], true);
+        $this->assertSame(1, $payload['c']);
+    }
+
+    /** Sans cookie, la cle est absente : `c` ne vaut que `1`, jamais `0`. */
+    public function test_sans_visite_en_cours_le_payload_ne_porte_pas_de_c(): void
+    {
+        $this->fakeRequest();
+
+        $this->client()->pageview();
+
+        $payload = json_decode(self::$server->requests()[0]['body'], true);
+        $this->assertArrayNotHasKey('c', $payload);
+    }
+
+    /**
+     * La surcharge `visit` prime sur `$_COOKIE`.
+     *
+     * C'est par elle que Laravel et Symfony transmettent ce qu'ils ont lu sur
+     * leur objet Request : sous Octane, RoadRunner ou FrankenPHP, `$_COOKIE`
+     * peut appartenir a la requete precedente, et la visite d'un visiteur
+     * serait alors recollee a celle du suivant.
+     */
+    public function test_la_surcharge_visit_prime_sur_le_cookie(): void
+    {
+        $this->fakeRequest();
+        $_COOKIE[Client::VISIT_MARKER] = '1';
+
+        $this->client()->pageview(['visit' => false]);
+        $this->client()->event('achat', [], ['visit' => true]);
+
+        $requests = self::$server->requests(2);
+        $this->assertArrayNotHasKey('c', json_decode($requests[0]['body'], true));
+        $this->assertSame(1, json_decode($requests[1]['body'], true)['c']);
+    }
+
+    /**
+     * `handleVisitRequest()` dit ce qui etait vrai AVANT son ecriture.
+     *
+     * Sans quoi le hit qui suit se declarerait toujours en visite continue,
+     * puisque c'est lui-meme qui vient d'ouvrir la fenetre.
+     */
+    public function test_handle_visit_request_dit_l_etat_d_avant_et_ne_touche_pas_a_cookie(): void
+    {
+        $this->fakeRequest();
+
+        $this->assertFalse(Client::handleVisitRequest(), 'aucune visite en cours au moment du hit');
+
+        // `$_COOKIE` reste intact, a l'inverse du refus : le hit qui part
+        // ensuite (WordPress envoie sur shutdown) doit lire l'etat d'avant.
+        $this->assertArrayNotHasKey(Client::VISIT_MARKER, $_COOKIE);
+
+        $this->client()->pageview();
+
+        $this->assertArrayNotHasKey('c', json_decode(self::$server->requests()[0]['body'], true));
+    }
+
+    public function test_handle_visit_request_reconnait_une_visite_deja_ouverte(): void
+    {
+        $this->fakeRequest();
+        $_COOKIE[Client::VISIT_MARKER] = '1';
+
+        $this->assertTrue(Client::handleVisitRequest());
+    }
+
+    /**
+     * On n'ecrit RIEN chez quelqu'un qui a refuse la mesure.
+     *
+     * Defense en profondeur : les appelants ne posent deja le cookie que sur
+     * un hit mesure, et un hit ne part pas pour une personne exclue. Cette
+     * garde tient meme si un appelant l'oublie. Seul le retour est observable
+     * en CLI, `headers_list()` y etant vide ; l'absence de Set-Cookie, elle,
+     * est eprouvee sur la Response par les ponts Laravel et Symfony.
+     */
+    public function test_handle_visit_request_n_ouvre_pas_de_visite_chez_une_personne_exclue(): void
+    {
+        $this->fakeRequest();
+        $_COOKIE[Client::OPT_OUT_MARKER] = '1';
+        $_COOKIE[Client::VISIT_MARKER] = '1';
+
+        $this->assertFalse(
+            Client::handleVisitRequest(),
+            'un refus posé arrete tout, y compris la continuite de visite',
+        );
+    }
 }
