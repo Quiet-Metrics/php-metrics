@@ -346,9 +346,9 @@ final class ClientTest extends TestCase
      * les bugs silencieux, et un faux garde est pire que pas de garde.
      *
      * La confrontation reelle des deux fichiers vit dans
-     * apps/platform/tests/Unit/MarqueurExclusionContratTest.php, seul endroit
-     * du depot qui voie tous les paquets a la fois. Ce test-ci ne garde que
-     * le cote PHP, et c'est tout ce qu'il pretend faire.
+     * apps/platform/tests/Unit/ContratDesMarqueursTest.php, seul endroit du
+     * depot qui voie tous les paquets a la fois. Ce test-ci ne garde que le
+     * cote PHP, et c'est tout ce qu'il pretend faire.
      */
     public function test_le_marqueur_porte_le_nom_et_la_duree_attendus(): void
     {
@@ -439,7 +439,9 @@ final class ClientTest extends TestCase
     {
         // Fige le contrat cote PHP, et rien de plus : la confrontation avec
         // packages/tracker-js/tracker.js ne peut vivre ici, ce paquet est
-        // publie seul sur Packagist et ne voit pas le traceur.
+        // publie seul sur Packagist et ne voit pas le traceur. Elle vit dans
+        // apps/platform/tests/Unit/ContratDesMarqueursTest.php, qui confronte
+        // le nom ET la fenetre des deux cotes.
         $this->assertSame('qm_visit', Client::VISIT_MARKER);
         $this->assertSame(600, Client::VISIT_LIFETIME, 'dix minutes, comme le max-age pose par le traceur JS');
     }
