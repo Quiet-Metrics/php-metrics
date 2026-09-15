@@ -5,6 +5,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 
 ## [0.4.0] - 2026-09-15
 
+### Documentation
+- Platform 1.8.0 now lists the top ten paths reported by events named `404`, with counts and previous-period changes. The dashboard uses the event URL's normalized path, dashboard filters and retained history; enabling tracking does not reconstruct older errors. The collection diagnostic keeps rejection and quota counts visible when collapsed.
+
 ### Added
 - `Client::isHtmlPageResponse()` defines the shared automatic pageview rule: GET HTML/XHTML documents, including 4xx/5xx error pages; excludes redirects, empty responses, non-HTML content and attachments. Manual `pageview()` calls are unchanged.
 
