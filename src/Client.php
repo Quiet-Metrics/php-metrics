@@ -107,6 +107,23 @@ final class Client
     }
 
     /**
+     * Shared rule for automatic server tracking: a rendered HTML document,
+     * including error pages, but never redirects, empty responses or downloads.
+     * Manual pageview() calls remain under the application's control.
+     */
+    public static function isHtmlPageResponse(string $method, int $status, ?string $contentType, ?string $disposition = null): bool
+    {
+        $mime = strtolower(trim(explode(';', $contentType ?? '')[0]));
+        $dispositionType = strtolower(trim(explode(';', $disposition ?? '')[0]));
+
+        return $method === 'GET'
+            && (($status >= 200 && $status < 300) || ($status >= 400 && $status < 600))
+            && !in_array($status, [204, 205], true)
+            && in_array($mime, ['text/html', 'application/xhtml+xml'], true)
+            && $dispositionType !== 'attachment';
+    }
+
+    /**
      * Événement personnalisé : event('inscription', ['plan' => 'pro']).
      * $props : valeurs scalaires uniquement, ≤ 30 clés (tronqué côté serveur).
      *

@@ -3,6 +3,15 @@
 All notable changes to `quiet-metrics/php-metrics` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org).
 
+## [0.4.0] - 2026-09-15
+
+### Added
+- `Client::isHtmlPageResponse()` defines the shared automatic pageview rule: GET HTML/XHTML documents, including 4xx/5xx error pages; excludes redirects, empty responses, non-HTML content and attachments. Manual `pageview()` calls are unchanged.
+
+### Compatibility
+- Laravel and Symfony 0.4.0 require this minor version. WordPress 0.4.0 embeds the same client.
+- Quiet Metrics platform 1.8.0 preserves an explicitly absent browser User-Agent in signed events and accepts signed background events without a language. Earlier platform versions may drop these events. Provide the event URL explicitly when sending outside an HTTP request.
+
 ## [0.3.0] - 2026-08-28
 
 ### Added

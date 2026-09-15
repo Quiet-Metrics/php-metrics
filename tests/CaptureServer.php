@@ -36,8 +36,11 @@ final class CaptureServer
     /** Secret prouvant que le serveur qui répond sur le port est bien le nôtre. */
     private string $jeton = '';
 
-    public function start(): void
+    private string $router;
+
+    public function start(?string $router = null): void
     {
+        $this->router = $router ?? __DIR__.'/capture-router.php';
         $this->logFile = tempnam(sys_get_temp_dir(), 'qm-capture-');
         $this->stderrFile = tempnam(sys_get_temp_dir(), 'qm-capture-err-');
         $this->jeton = bin2hex(random_bytes(16));
@@ -156,7 +159,7 @@ final class CaptureServer
         file_put_contents($this->stderrFile, '');
 
         $this->process = proc_open(
-            [PHP_BINARY, '-S', '127.0.0.1:'.$port, __DIR__.'/capture-router.php'],
+            [PHP_BINARY, '-S', '127.0.0.1:'.$port, $this->router],
             [2 => ['file', $this->stderrFile, 'w']],
             $pipes,
             null,

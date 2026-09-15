@@ -122,3 +122,9 @@ Compatibilité : PHP >= 7.4, extension `ext-json` uniquement (`ext-curl` suggér
 ## Licence
 
 MIT. Un produit [La Boîte à Code](https://laboiteacode.fr) pour [Quiet Metrics](https://quietmetrics.dev).
+
+## Réponses HTML et événements serveur
+
+Depuis 0.4.0, `Client::isHtmlPageResponse($method, $status, $contentType, $disposition)` permet aux intégrations automatiques de partager la même règle : HTML/XHTML GET, erreurs comprises, sans redirections, réponses vides ni téléchargements. Les appels manuels à `pageview()` restent sous votre contrôle.
+
+Avec la plateforme 1.8.0, les événements serveur signés peuvent omettre le navigateur et la langue. Hors requête HTTP, indiquez explicitement l’URL de l’événement ; ne fabriquez pas de navigateur ou de langue pour contourner le filtre.

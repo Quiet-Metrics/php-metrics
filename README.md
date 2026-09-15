@@ -122,3 +122,9 @@ Compatibility: PHP >= 7.4, `ext-json` only (`ext-curl` suggested for the fallbac
 ## License
 
 MIT. A [La Boîte à Code](https://laboiteacode.fr) product for [Quiet Metrics](https://quietmetrics.dev).
+
+## HTML responses and background events
+
+Since 0.4.0, `Client::isHtmlPageResponse($method, $status, $contentType, $disposition)` provides the common automatic tracking rule: HTML/XHTML GET documents, including errors, excluding redirects, empty responses and downloads. Manual `pageview()` calls remain under your control.
+
+With platform 1.8.0, signed background events may omit browser identity and language. Outside an HTTP request, supply the event URL explicitly; do not invent a browser or language to bypass filtering.
