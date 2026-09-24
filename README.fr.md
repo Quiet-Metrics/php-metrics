@@ -113,6 +113,8 @@ $qm->pageview(['visit' => $enCours]);
 ## Comment ça marche
 
 - **Payload compact** : clés courtes (`k`, `t`, `u`, `n`, `r`, `l`, `p`, `c`), plafonné à 4 Ko. Spec complète : `docs/05-api-et-sdk.md` à la racine du monorepo.
+- **Seulement ce que la plateforme lit** (0.5.0) : l'adresse de la page est réduite à son origine, à son chemin et aux paramètres `utm_source`, `utm_medium`, `utm_campaign` et `ref` (`Client::FORWARDED_QUERY_PARAMS`) ; le référent à son origine. Un formulaire en GET, un jeton ou une adresse e-mail dans l'URL ne quittent jamais le site. Les surcharges passent par la même règle, et une adresse sans hôte n'est pas envoyée.
+- **Remplaçable en test** (0.5.0) : `Client` implémente `QuietMetrics\Tracker`. Typez l'interface dans votre code pour y substituer un double de test : le client lui-même est `final`.
 - **Mode signé** : avec la clé secrète, chaque hit part avec les en-têtes `X-QM-Timestamp` et `X-QM-Signature` (HMAC-SHA256 de `timestamp.corps`). C'est la seule chose qui autorise le serveur de collecte à honorer l'IP, le User-Agent et l'horodatage du visiteur transmis dans le payload.
 - **Non bloquant** : socket « write-and-forget » (environ 1 ms perçu par la page), repli cURL avec timeout de 400 ms si les sockets sortants sont désactivés.
 - **Jamais d'exception** : tout échec (endpoint injoignable, payload trop gros, contexte absent) est silencieux. L'analytics ne casse jamais le site hôte.

@@ -113,6 +113,8 @@ Note for cached sites: a measured response now carries a `Set-Cookie` header, wh
 ## How it works
 
 - **Compact payload**: short keys (`k`, `t`, `u`, `n`, `r`, `l`, `p`, `c`), capped at 4 KB. Full spec: `docs/05-api-et-sdk.md` at the monorepo root.
+- **Only what the platform reads** (0.5.0): the page address is reduced to its origin, its path and the `utm_source`, `utm_medium`, `utm_campaign` and `ref` parameters (`Client::FORWARDED_QUERY_PARAMS`); the referrer to its origin. A GET form, a token or an email address in the URL never leaves the site. Overrides go through the same rule, and an address without a host is not sent.
+- **Replaceable in tests** (0.5.0): `Client` implements `QuietMetrics\Tracker`. Type-hint the interface in your code to swap in a test double: the client itself is `final`.
 - **Signed mode**: with the secret key, every hit ships with the `X-QM-Timestamp` and `X-QM-Signature` headers (HMAC-SHA256 of `timestamp.body`). This is the only thing that authorises the collection server to honour the visitor IP, User-Agent and timestamp carried in the payload.
 - **Non-blocking**: "write-and-forget" socket (about 1 ms as perceived by the page), cURL fallback with a 400 ms timeout when outgoing sockets are disabled.
 - **Never throws**: every failure (unreachable endpoint, oversized payload, missing context) is silent. Analytics never breaks the host site.
