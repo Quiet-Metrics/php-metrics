@@ -206,6 +206,38 @@ final class ClientTest extends TestCase
         $this->assertSame(1_700_000_000, $payload['ts']);
     }
 
+    public function test_la_requete_d_un_formulaire_en_get_ne_part_pas(): void
+    {
+        $this->fakeRequest();
+        $_SERVER['REQUEST_URI'] = '/me-contacter?name=Jean&email=jean%40exemple.fr&utm_source=nl';
+        $_SERVER['HTTP_REFERER'] = 'https://monsite.fr/?email=jean%40exemple.fr';
+
+        $this->client()->pageview();
+
+        $payload = json_decode(self::$server->requests()[0]['body'], true);
+        $this->assertSame('https://monsite.fr/me-contacter?utm_source=nl', $payload['u']);
+        $this->assertSame('https://monsite.fr/', $payload['r']);
+    }
+
+    public function test_une_surcharge_est_minimisee_comme_le_contexte(): void
+    {
+        $this->client()->event('inscription', [], [
+            'url' => 'https://app.fr/merci?email=a%40b.fr',
+            'referrer' => 'https://app.fr/inscription?email=a%40b.fr',
+        ]);
+
+        $payload = json_decode(self::$server->requests()[0]['body'], true);
+        $this->assertSame('https://app.fr/merci', $payload['u']);
+        $this->assertSame('https://app.fr/', $payload['r']);
+    }
+
+    public function test_une_url_sans_hote_n_envoie_rien(): void
+    {
+        $this->client()->event('import', [], ['url' => '/imports?email=a%40b.fr']);
+
+        $this->assertSame([], self::$server->requests(1, 300));
+    }
+
     public function test_en_cli_sans_url_rien_ne_part(): void
     {
         unset($_SERVER['HTTP_HOST'], $_SERVER['REQUEST_URI']);

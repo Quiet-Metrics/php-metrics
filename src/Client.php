@@ -62,6 +62,18 @@ final class Client
      */
     public const VISIT_LIFETIME = 600;
 
+    /**
+     * Les seuls paramètres d'URL qui quittent le site mesuré.
+     *
+     * Ce sont exactement ceux que la plateforme lit (`webanalytics.tracking_params`) :
+     * tout le reste était jeté à la réception, mais transitait jusque-là, y
+     * compris les champs d'un formulaire envoyé en GET. Un test de la
+     * plateforme, ForwardedQueryParamsContractTest, casse si les deux listes
+     * divergent : un paramètre que la plateforme lirait sans que le SDK
+     * l'envoie disparaîtrait en silence.
+     */
+    public const FORWARDED_QUERY_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'ref'];
+
     private string $publicKey;
 
     private ?string $secretKey;
@@ -149,6 +161,11 @@ final class Client
 
             $ctx = array_merge($this->requestContext(), $this->defaults, $overrides);
 
+            // Minimisé ICI, point de passage de tout hit : contexte déduit,
+            // surcharges manuelles, ponts Laravel et Symfony, plugin WordPress.
+            $url = isset($ctx['url']) && \is_string($ctx['url']) ? self::minimizeUrl($ctx['url']) : null;
+            $referrer = isset($ctx['referrer']) && \is_string($ctx['referrer']) ? self::minimizeReferrer($ctx['referrer']) : null;
+
             $payload = [
                 'k' => $this->publicKey,
                 't' => $type,
@@ -157,8 +174,8 @@ final class Client
                 'n' => $name !== null
                     ? (\function_exists('mb_substr') ? mb_substr($name, 0, 120) : substr($name, 0, 120))
                     : null,
-                'u' => $ctx['url'] ?? null,
-                'r' => $ctx['referrer'] ?? null,
+                'u' => $url,
+                'r' => $referrer,
                 'l' => $ctx['lang'] ?? null,
                 'p' => $props !== [] ? $props : null,
                 // Continuité de visite : `1` quand une visite était déjà en
@@ -243,6 +260,80 @@ final class Client
         }
 
         return false;
+    }
+
+    /**
+     * L'URL réduite à ce que la plateforme lit : origine, chemin, et les seuls
+     * paramètres de FORWARDED_QUERY_PARAMS, dans leur ordre et leur encodage
+     * d'origine.
+     *
+     * Le fragment part aussi : un serveur ne le reçoit jamais, seule une
+     * surcharge manuelle pourrait en porter un, et il y logerait un jeton
+     * (`#access_token=`) plus souvent qu'une route. Les identifiants de
+     * connexion (`user:pass@`) partent avec lui.
+     *
+     * La clé est comparée décodée (`utm%5Fsource` vaut `utm_source`), la paire
+     * est recopiée telle quelle. Une clé en tableau (`utm_source[]`) ne passe
+     * pas : la plateforme ne lit que des chaînes.
+     *
+     * Publique et statique pour la même raison qu'announcesPrefetch() : la
+     * règle est une, et les intégrations doivent pouvoir la citer.
+     *
+     * @return string|null null si l'URL n'a pas d'hôte : la plateforme la
+     *                     refuserait, et send() abandonne en silence
+     */
+    public static function minimizeUrl(string $url): ?string
+    {
+        $origin = self::origin($url);
+        if ($origin === null) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        $path = isset($parts['path']) && $parts['path'] !== '' ? $parts['path'] : '/';
+
+        $kept = [];
+        foreach (explode('&', $parts['query'] ?? '') as $pair) {
+            if ($pair === '') {
+                continue;
+            }
+            $key = urldecode(explode('=', $pair, 2)[0]);
+            if (\in_array($key, self::FORWARDED_QUERY_PARAMS, true)) {
+                $kept[] = $pair;
+            }
+        }
+
+        return $origin . $path . ($kept !== [] ? '?' . implode('&', $kept) : '');
+    }
+
+    /**
+     * Le référent réduit à son origine suivie de `/`.
+     *
+     * La plateforme n'en lit que l'hôte (canal, domaine référent, blocage).
+     * Le chemin et la requête ne servaient à rien, et le référent d'une page
+     * interne porte souvent l'URL entière de la page précédente, formulaire
+     * compris.
+     */
+    public static function minimizeReferrer(?string $referrer): ?string
+    {
+        if ($referrer === null || $referrer === '') {
+            return null;
+        }
+
+        $origin = self::origin($referrer);
+
+        return $origin !== null ? $origin . '/' : null;
+    }
+
+    /** `scheme://hôte[:port]`, ou null quand l'URL n'a pas d'hôte. */
+    private static function origin(string $url): ?string
+    {
+        $parts = parse_url($url);
+        if ($parts === false || !isset($parts['scheme'], $parts['host']) || $parts['host'] === '') {
+            return null;
+        }
+
+        return $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
     }
 
     /**
