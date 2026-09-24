@@ -3,6 +3,18 @@
 All notable changes to `quiet-metrics/php-metrics` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org).
 
+## [0.5.0] - 2026-09-24
+
+### Changed
+- **Only what the platform reads leaves the site.** Every hit now goes through `Client::minimizeUrl()` and `Client::minimizeReferrer()` in `send()`: the page address is reduced to its origin, its path and the `utm_source`, `utm_medium`, `utm_campaign` and `ref` parameters, in their original order and encoding (`Client::FORWARDED_QUERY_PARAMS`); the referrer is reduced to its origin. A form submitted with GET, a token or an email address in the URL no longer travels to Quiet Metrics. The rule covers the context inferred from the request, manual overrides and every integration built on this client. The platform discarded all of it on arrival, so no figure changes.
+- An address without a host is no longer sent: the platform rejected it with a 400.
+
+### Added
+- `QuietMetrics\Tracker` interface (`pageview()`, `event()`), implemented by `Client`. Type-hint it in application code to replace the client in tests: `Client` stays `final`.
+
+### Compatibility
+- Laravel and Symfony 0.5.0 require this minor version. WordPress 0.5.0 embeds the same client and interface.
+
 ## [0.4.0] - 2026-09-15
 
 ### Documentation
