@@ -18,7 +18,7 @@ namespace QuietMetrics;
  *     $qm->pageview();
  *     $qm->event('achat', ['montant' => 49]);
  */
-final class Client
+final class Client implements Tracker
 {
     /**
      * Marqueur d'exclusion, sous ce nom comme cookie et comme paramètre d'URL.

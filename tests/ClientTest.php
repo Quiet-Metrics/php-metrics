@@ -206,6 +206,11 @@ final class ClientTest extends TestCase
         $this->assertSame(1_700_000_000, $payload['ts']);
     }
 
+    public function test_le_client_est_un_tracker(): void
+    {
+        $this->assertInstanceOf(\QuietMetrics\Tracker::class, $this->client());
+    }
+
     public function test_la_requete_d_un_formulaire_en_get_ne_part_pas(): void
     {
         $this->fakeRequest();
