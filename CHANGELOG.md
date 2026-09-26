@@ -3,6 +3,16 @@
 All notable changes to `quiet-metrics/php-metrics` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org).
 
+## [0.6.0] - 2026-09-28
+
+### Added
+- **Ownership proof for the SEO crawl.** The Quiet Metrics SEO tab only crawls a site that proves it belongs to the account that declared it. `Client::siteVerificationDocument()` returns the document to serve at `Client::SITE_VERIFICATION_PATH` (`/.well-known/quietmetrics.json`): `{"site_verification":["<token>"]}`, the token being `hash_hmac('sha256', Client::SITE_VERIFICATION_CONTEXT, $secretKey)` in lowercase hex, with `SITE_VERIFICATION_CONTEXT` = `quietmetrics-site-verification:v1`. The secret key, not the public one, which can be read in the HTML of pages measured in script mode.
+- New `seo_crawl` constructor option, `false` by default. The document is `null` unless it is `true` AND a secret key is set.
+- `Client::serveSiteVerification()` for plain PHP sites: answers a `GET` or `HEAD` on that exact path with `Content-Type: application/json; charset=utf-8` and `Cache-Control: no-store`, and returns `true`; any other request returns `false` and outputs nothing. Neither method is part of the `Tracker` interface.
+
+### Compatibility
+- Laravel and Symfony 0.6.0 require this minor version. WordPress 0.6.0 embeds the same client. Still PHP >= 7.4.
+
 ## [0.5.0] - 2026-09-24
 
 ### Changed

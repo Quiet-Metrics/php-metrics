@@ -33,6 +33,7 @@ $qm = new Client('qm_pub_demo', 'qm_sec_xxx', [
     'timeout_ms' => 400,             // max time granted to the send (min 50)
     'async' => true,                 // fire-and-forget socket; false = short synchronous cURL
     'trust_proxy_headers' => false,  // true if the app sits behind a reverse proxy / CDN
+    'seo_crawl' => false,            // true serves the ownership proof for the SEO crawl (see below)
     'defaults' => [],                // context applied to every hit, e.g. ['lang' => 'en-US']
 ]);
 ```
@@ -109,6 +110,30 @@ $qm->pageview(['visit' => $ongoing]);
 Its value is a constant, the same for everyone, so it identifies nobody: it only says that a visit is already under way in this browser. It is never written to someone who has set the opt-out marker, and never written when nothing is measured.
 
 Note for cached sites: a measured response now carries a `Set-Cookie` header, which some reverse proxies and CDNs treat as a reason not to store the response.
+
+## SEO crawl
+
+The SEO tab of Quiet Metrics only crawls a site that proves it belongs to the account that declared it. The proof is a small JSON document served by the site itself at `/.well-known/quietmetrics.json`:
+
+```json
+{"site_verification":["<token>"]}
+```
+
+The token is an HMAC-SHA256 of a fixed context string computed with your **secret** key, never the key itself. The secret key and not the public one: the public key can be read in the HTML of any page measured in script mode, so anyone could publish a token derived from it.
+
+The option is **off by default**. Without it, or without a secret key, the SDK serves nothing at that path and Quiet Metrics does not crawl the site. To turn it on, read `QUIET_METRICS_SEO_CRAWL=true` from your environment and serve the document early in the request, before any output:
+
+```php
+$qm = new Client('qm_pub_xxx', 'qm_sec_xxx', [
+    'seo_crawl' => filter_var(getenv('QUIET_METRICS_SEO_CRAWL'), FILTER_VALIDATE_BOOLEAN),
+]);
+
+if ($qm->serveSiteVerification()) {
+    exit; // the JSON response is complete
+}
+```
+
+`serveSiteVerification()` only answers a `GET` or `HEAD` on that exact path (query string ignored), with `Content-Type: application/json` and `Cache-Control: no-store`; any other request returns `false` and outputs nothing. Behind a framework, use `siteVerificationDocument()`, which returns the JSON or `null`, in your own route.
 
 ## How it works
 

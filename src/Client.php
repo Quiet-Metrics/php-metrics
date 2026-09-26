@@ -74,6 +74,27 @@ final class Client implements Tracker
      */
     public const FORWARDED_QUERY_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'ref'];
 
+    /**
+     * Chemin où le site prouve à Quiet Metrics qu'il appartient bien au compte
+     * qui l'a déclaré.
+     *
+     * L'onglet SEO de la plateforme explore le site, et elle refuse d'explorer
+     * un domaine qui n'a pas apporté cette preuve : sans elle, n'importe quel
+     * compte pourrait lancer un crawl sur le site d'un tiers en le déclarant
+     * simplement comme le sien. Le chemin, la forme du JSON et le contexte du
+     * HMAC forment un contrat avec la plateforme, au caractère près.
+     */
+    public const SITE_VERIFICATION_PATH = '/.well-known/quietmetrics.json';
+
+    /**
+     * Contexte du HMAC qui produit le jeton de vérification.
+     *
+     * Versionné (`:v1`) pour pouvoir changer de schéma un jour sans qu'un
+     * ancien jeton reste valide. Il sépare aussi ce jeton de la signature des
+     * hits, calculée avec la même clé secrète sur un tout autre message.
+     */
+    public const SITE_VERIFICATION_CONTEXT = 'quietmetrics-site-verification:v1';
+
     private string $publicKey;
 
     private ?string $secretKey;
@@ -89,11 +110,19 @@ final class Client implements Tracker
     /** Faire confiance à X-Forwarded-For/-Proto (app derrière un reverse proxy). */
     private bool $trustProxyHeaders;
 
+    /** Servir le document de vérification du site (crawl SEO), éteint par défaut. */
+    private bool $seoCrawl;
+
     /** @var array<string,mixed> */
     private array $defaults;
 
     /**
-     * @param array{endpoint?:string,timeout_ms?:int,async?:bool,trust_proxy_headers?:bool,defaults?:array} $options
+     * Option `seo_crawl` (false par défaut) : autorise l'onglet SEO de Quiet
+     * Metrics à explorer le site, en servant la preuve de propriété sur
+     * SITE_VERIFICATION_PATH (voir siteVerificationDocument()). Elle n'a
+     * d'effet qu'avec une clé secrète.
+     *
+     * @param array{endpoint?:string,timeout_ms?:int,async?:bool,trust_proxy_headers?:bool,seo_crawl?:bool,defaults?:array} $options
      */
     public function __construct(string $publicKey, ?string $secretKey = null, array $options = [])
     {
@@ -103,6 +132,7 @@ final class Client implements Tracker
         $this->timeoutMs = max(50, (int) ($options['timeout_ms'] ?? 400));
         $this->async = (bool) ($options['async'] ?? true);
         $this->trustProxyHeaders = (bool) ($options['trust_proxy_headers'] ?? false);
+        $this->seoCrawl = (bool) ($options['seo_crawl'] ?? false);
         $this->defaults = $options['defaults'] ?? [];
     }
 
@@ -145,6 +175,92 @@ final class Client implements Tracker
     public function event(string $name, array $props = [], array $overrides = []): void
     {
         $this->send('event', $name, $props, $overrides);
+    }
+
+    /**
+     * Le document JSON que le site sert sur SITE_VERIFICATION_PATH, ou null
+     * quand il ne doit rien servir.
+     *
+     *     {"site_verification":["<jeton>"]}
+     *
+     * Le jeton est le HMAC-SHA256 de SITE_VERIFICATION_CONTEXT par la clé
+     * SECRÈTE, en hexadécimal minuscule. La clé secrète et pas la clé
+     * publique : la publique est lisible dans le HTML de toute page mesurée
+     * en mode script, n'importe qui pourrait donc publier le jeton qu'elle
+     * donnerait. Seul qui détient la secrète, donc le compte qui a déclaré le
+     * site, peut produire celui-ci. Le HMAC ne la révèle pas pour autant : le
+     * document est public, la clé ne quitte jamais le serveur.
+     *
+     * null tant que l'option `seo_crawl` n'est pas activée, et sans clé
+     * secrète : un site qui n'a rien demandé ne doit rien exposer, et le
+     * chemin retombe alors sur ce que l'application hôte y sert (son 404,
+     * le plus souvent). Sans ce document, la plateforme n'explore pas le site.
+     */
+    public function siteVerificationDocument(): ?string
+    {
+        if (!$this->seoCrawl || $this->secretKey === null || $this->secretKey === '') {
+            return null;
+        }
+
+        $document = json_encode(
+            ['site_verification' => [hash_hmac('sha256', self::SITE_VERIFICATION_CONTEXT, $this->secretKey)]],
+            JSON_UNESCAPED_SLASHES
+        );
+
+        return $document !== false ? $document : null;
+    }
+
+    /**
+     * Sert le document de vérification si la requête courante le demande,
+     * pour les sites en PHP nu (et le plugin WordPress) qui n'ont pas de
+     * routeur où le déclarer.
+     *
+     * Ne répond qu'à un GET ou un HEAD sur SITE_VERIFICATION_PATH exactement,
+     * la chaîne de requête mise à part. Dans tous les autres cas, et tant que
+     * siteVerificationDocument() vaut null, rien n'est émis et la méthode
+     * rend false : la requête continue comme si le SDK n'existait pas.
+     *
+     * À appeler TÔT, avant toute sortie. Quand elle rend true, la réponse est
+     * complète et l'appelant doit s'arrêter là (`exit`). Les en-têtes ne sont
+     * posés que s'il est encore temps, pour ne jamais faire apparaître
+     * d'avertissement PHP dans la page hôte.
+     *
+     * Lit les superglobales : réservée comme handleOptOutRequest() aux
+     * intégrations sans objet Request. Laravel et Symfony répondent depuis
+     * leur propre pile, avec siteVerificationDocument().
+     */
+    public function serveSiteVerification(): bool
+    {
+        $method = isset($_SERVER['REQUEST_METHOD']) && \is_string($_SERVER['REQUEST_METHOD'])
+            ? strtoupper($_SERVER['REQUEST_METHOD'])
+            : '';
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            return false;
+        }
+
+        $uri = $_SERVER['REQUEST_URI'] ?? null;
+        if (!\is_string($uri) || parse_url($uri, PHP_URL_PATH) !== self::SITE_VERIFICATION_PATH) {
+            return false;
+        }
+
+        $document = $this->siteVerificationDocument();
+        if ($document === null) {
+            return false;
+        }
+
+        if (!headers_sent()) {
+            http_response_code(200);
+            header('Content-Type: application/json; charset=utf-8');
+            // Jamais mis en cache : couper l'option ou changer de clé doit
+            // prendre effet au prochain passage de la plateforme.
+            header('Cache-Control: no-store');
+        }
+
+        if ($method !== 'HEAD') {
+            echo $document;
+        }
+
+        return true;
     }
 
     /**

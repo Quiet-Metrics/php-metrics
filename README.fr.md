@@ -33,6 +33,7 @@ $qm = new Client('qm_pub_demo', 'qm_sec_xxx', [
     'timeout_ms' => 400,             // délai max consenti à l'envoi (min 50)
     'async' => true,                 // socket fire-and-forget ; false = cURL synchrone court
     'trust_proxy_headers' => false,  // true si l'app est derrière un reverse proxy / CDN
+    'seo_crawl' => false,            // true sert la preuve de propriété du crawl SEO (voir plus bas)
     'defaults' => [],                // contexte appliqué à tous les hits, ex. ['lang' => 'fr-FR']
 ]);
 ```
@@ -109,6 +110,30 @@ $qm->pageview(['visit' => $enCours]);
 ```
 
 À savoir si votre site est mis en cache : une réponse mesurée porte désormais un en-tête `Set-Cookie`, que certains reverse proxys et CDN prennent comme une raison de ne pas stocker la réponse.
+
+## Crawl SEO
+
+L'onglet SEO de Quiet Metrics n'explore qu'un site qui prouve appartenir au compte qui l'a déclaré. La preuve est un petit document JSON servi par le site lui-même sur `/.well-known/quietmetrics.json` :
+
+```json
+{"site_verification":["<jeton>"]}
+```
+
+Le jeton est un HMAC-SHA256 d'une chaîne de contexte fixe, calculé avec votre clé **secrète**, jamais la clé elle-même. La secrète et pas la publique : la clé publique se lit dans le HTML de toute page mesurée en mode script, n'importe qui pourrait donc publier un jeton qui en serait tiré.
+
+L'option est **éteinte par défaut**. Sans elle, ou sans clé secrète, le SDK ne sert rien sur ce chemin et Quiet Metrics n'explore pas le site. Pour l'activer, lisez `QUIET_METRICS_SEO_CRAWL=true` dans votre environnement et servez le document tôt dans la requête, avant toute sortie :
+
+```php
+$qm = new Client('qm_pub_xxx', 'qm_sec_xxx', [
+    'seo_crawl' => filter_var(getenv('QUIET_METRICS_SEO_CRAWL'), FILTER_VALIDATE_BOOLEAN),
+]);
+
+if ($qm->serveSiteVerification()) {
+    exit; // la réponse JSON est complète
+}
+```
+
+`serveSiteVerification()` ne répond qu'à un `GET` ou un `HEAD` sur ce chemin exact (chaîne de requête ignorée), avec `Content-Type: application/json` et `Cache-Control: no-store` ; toute autre requête rend `false` sans rien émettre. Derrière un framework, utilisez `siteVerificationDocument()`, qui rend le JSON ou `null`, dans votre propre route.
 
 ## Comment ça marche
 
