@@ -4,7 +4,7 @@
 
 > 🇬🇧 [English version](README.md)
 
-SDK PHP pur de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : mesure d'audience sans cookie d'identification ni de traçabilité, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 7.4 (mutualisés et WordPress inclus).
+SDK PHP pur de [Quiet Metrics](https://quietmetrics.dev) (QuietSystems) : mesure d'audience sans cookie d'identification ni de traçabilité, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 7.4 (mutualisés et WordPress inclus).
 
 C'est aussi la fondation des ponts framework : [`quiet-metrics/laravel-metrics`](https://github.com/Quiet-Metrics/laravel-metrics) et [`quiet-metrics/symfony-metrics`](https://github.com/Quiet-Metrics/symfony-metrics) dépendent de ce package.
 
@@ -148,7 +148,7 @@ Compatibilité : PHP >= 7.4, extension `ext-json` uniquement (`ext-curl` suggér
 
 ## Licence
 
-MIT. Un produit [La Boîte à Code](https://laboiteacode.fr) pour [Quiet Metrics](https://quietmetrics.dev).
+MIT. Un produit [QuietSystems](https://quietsystems.dev) pour [Quiet Metrics](https://quietmetrics.dev).
 
 ## Réponses HTML et événements serveur
 

@@ -4,7 +4,7 @@
 
 > 🇫🇷 [Version française](README.fr.md)
 
-Plain-PHP SDK for [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code): audience measurement with no identification or tracking cookies, sent 100% from your server, hence invisible to ad blockers. Zero dependencies, compatible with PHP >= 7.4 (shared hosting and WordPress included).
+Plain-PHP SDK for [Quiet Metrics](https://quietmetrics.dev) (QuietSystems): audience measurement with no identification or tracking cookies, sent 100% from your server, hence invisible to ad blockers. Zero dependencies, compatible with PHP >= 7.4 (shared hosting and WordPress included).
 
 It is also the foundation of the framework bridges: [`quiet-metrics/laravel-metrics`](https://github.com/Quiet-Metrics/laravel-metrics) and [`quiet-metrics/symfony-metrics`](https://github.com/Quiet-Metrics/symfony-metrics) depend on this package.
 
@@ -148,7 +148,7 @@ Compatibility: PHP >= 7.4, `ext-json` only (`ext-curl` suggested for the fallbac
 
 ## License
 
-MIT. A [La Boîte à Code](https://laboiteacode.fr) product for [Quiet Metrics](https://quietmetrics.dev).
+MIT. A [QuietSystems](https://quietsystems.dev) product for [Quiet Metrics](https://quietmetrics.dev).
 
 ## HTML responses and background events
 
