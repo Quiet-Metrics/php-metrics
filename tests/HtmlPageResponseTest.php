@@ -32,6 +32,7 @@ final class HtmlPageResponseTest extends TestCase
         ];
     }
 
+    /** @dataProvider responses */
     #[DataProvider('responses')]
     public function test_only_rendered_html_documents_are_pages(string $method, int $status, ?string $type, ?string $disposition, bool $expected): void
     {

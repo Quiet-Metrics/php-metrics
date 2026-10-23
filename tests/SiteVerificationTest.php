@@ -151,6 +151,7 @@ final class SiteVerificationTest extends TestCase
         ];
     }
 
+    /** @dataProvider requestsThatAreNotServed */
     #[DataProvider('requestsThatAreNotServed')]
     public function test_any_other_request_is_left_alone(string $method, string $uri): void
     {

@@ -116,6 +116,8 @@ final class ClientTest extends TestCase
      * fabriquait une page vue et parfois un visiteur, invisibles pour un
      * traceur JS puisque la page préchargée n'est pas activée. Le navigateur
      * l'annonce, il suffisait de le lire.
+     *
+     * @dataProvider annoncesDePrechargement
      */
     #[DataProvider('annoncesDePrechargement')]
     public function test_un_prechargement_annonce_n_envoie_aucune_page_vue(string $entete, string $valeur): void
@@ -360,6 +362,8 @@ final class ClientTest extends TestCase
      * Traiter la seule PRESENCE du cookie comme un refus ferait disparaitre
      * des visites reelles : `qm_ignore=0` est justement la trace laissee par
      * un retrait, et un cookie vide est ce que renvoient certains proxys.
+     *
+     * @dataProvider marqueursQuiNExcluentPas
      */
     #[DataProvider('marqueursQuiNExcluentPas')]
     public function test_un_marqueur_qui_ne_vaut_pas_un_laisse_partir_la_page_vue(string $valeur): void
@@ -503,6 +507,8 @@ final class ClientTest extends TestCase
      * Se contenter de la PRESENCE du cookie ferait passer pour une visite
      * continue tout ce qu'un intermediaire laisse trainer sous ce nom, et
      * fusionnerait alors deux personnes en une.
+     *
+     * @dataProvider cookiesQuiNOuvrentPasDeVisite
      */
     #[DataProvider('cookiesQuiNOuvrentPasDeVisite')]
     public function test_un_cookie_de_visite_qui_ne_vaut_pas_un_n_ouvre_rien(string $valeur): void
