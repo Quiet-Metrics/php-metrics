@@ -2,7 +2,7 @@
 
 /**
  * Quiet Metrics, proxy first-party anti-adblock : fichier unique à
- * déposer à la racine du site client (aucune dépendance, PHP >= 7.4).
+ * déposer à la racine du site client (aucune dépendance, PHP >= 8.3).
  *
  * Le navigateur n'appelle QUE le domaine du site : les listes de blocage par
  * domaine (EasyPrivacy…) ne voient jamais notre endpoint. Le proxy injecte
@@ -76,9 +76,6 @@ if (function_exists('curl_init') && ($ch = curl_init(QM_ENDPOINT)) !== false) {
         CURLOPT_NOSIGNAL => true,
     ]);
     @curl_exec($ch);
-    if (PHP_VERSION_ID < 80000) {
-        curl_close($ch); // sans effet et déprécié depuis PHP 8 (handle objet, libéré par le GC)
-    }
 }
 
 http_response_code(202);

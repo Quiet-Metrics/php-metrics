@@ -37,7 +37,6 @@ final class MinimizationTest extends TestCase
         ];
     }
 
-    /** @dataProvider urls */
     #[DataProvider('urls')]
     public function test_l_url_ne_garde_que_ce_que_la_plateforme_lit(string $url, ?string $expected): void
     {
@@ -58,7 +57,6 @@ final class MinimizationTest extends TestCase
         ];
     }
 
-    /** @dataProvider referrers */
     #[DataProvider('referrers')]
     public function test_le_referent_se_reduit_a_son_origine(?string $referrer, ?string $expected): void
     {

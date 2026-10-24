@@ -4,7 +4,7 @@
 
 > 🇬🇧 [English version](README.md)
 
-SDK PHP pur de [Quiet Metrics](https://quietmetrics.dev) (QuietSystems) : mesure d'audience sans cookie d'identification ni de traçabilité, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 7.4 (mutualisés et WordPress inclus).
+SDK PHP pur de [Quiet Metrics](https://quietmetrics.dev) (QuietSystems) : mesure d'audience sans cookie d'identification ni de traçabilité, envoyée à 100 % depuis votre serveur, donc invisible pour les adblockers. Zéro dépendance, compatible PHP >= 8.3.
 
 C'est aussi la fondation des ponts framework : [`quiet-metrics/laravel-metrics`](https://github.com/Quiet-Metrics/laravel-metrics) et [`quiet-metrics/symfony-metrics`](https://github.com/Quiet-Metrics/symfony-metrics) dépendent de ce package.
 
@@ -144,7 +144,7 @@ if ($qm->serveSiteVerification()) {
 - **Non bloquant** : socket « write-and-forget » (environ 1 ms perçu par la page), repli cURL avec timeout de 400 ms si les sockets sortants sont désactivés.
 - **Jamais d'exception** : tout échec (endpoint injoignable, payload trop gros, contexte absent) est silencieux. L'analytics ne casse jamais le site hôte.
 
-Compatibilité : PHP >= 7.4, extension `ext-json` uniquement (`ext-curl` suggérée pour le transport de repli). Tests : `composer test` (PHPUnit contre un vrai serveur HTTP de capture, voir `tests/`).
+Compatibilité : PHP >= 8.3, extension `ext-json` uniquement (`ext-curl` suggérée pour le transport de repli). Tests : `composer test` (PHPUnit contre un vrai serveur HTTP de capture, voir `tests/`).
 
 ## Licence
 

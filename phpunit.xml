@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Config minimale volontairement : valide de PHPUnit 9 (PHP 7.4) à PHPUnit 12. -->
+<!-- Config minimale volontairement : valide de PHPUnit 10 à PHPUnit 12 (PHP 8.3 et plus). -->
 <phpunit bootstrap="vendor/autoload.php" colors="true">
     <testsuites>
         <testsuite name="Package">

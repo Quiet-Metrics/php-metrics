@@ -4,7 +4,7 @@
 
 > 🇫🇷 [Version française](README.fr.md)
 
-Plain-PHP SDK for [Quiet Metrics](https://quietmetrics.dev) (QuietSystems): audience measurement with no identification or tracking cookies, sent 100% from your server, hence invisible to ad blockers. Zero dependencies, compatible with PHP >= 7.4 (shared hosting and WordPress included).
+Plain-PHP SDK for [Quiet Metrics](https://quietmetrics.dev) (QuietSystems): audience measurement with no identification or tracking cookies, sent 100% from your server, hence invisible to ad blockers. Zero dependencies, compatible with PHP >= 8.3.
 
 It is also the foundation of the framework bridges: [`quiet-metrics/laravel-metrics`](https://github.com/Quiet-Metrics/laravel-metrics) and [`quiet-metrics/symfony-metrics`](https://github.com/Quiet-Metrics/symfony-metrics) depend on this package.
 
@@ -144,7 +144,7 @@ if ($qm->serveSiteVerification()) {
 - **Non-blocking**: "write-and-forget" socket (about 1 ms as perceived by the page), cURL fallback with a 400 ms timeout when outgoing sockets are disabled.
 - **Never throws**: every failure (unreachable endpoint, oversized payload, missing context) is silent. Analytics never breaks the host site.
 
-Compatibility: PHP >= 7.4, `ext-json` only (`ext-curl` suggested for the fallback transport). Tests: `composer test` (PHPUnit against a real HTTP capture server, see `tests/`).
+Compatibility: PHP >= 8.3, `ext-json` only (`ext-curl` suggested for the fallback transport). Tests: `composer test` (PHPUnit against a real HTTP capture server, see `tests/`).
 
 ## License
 
