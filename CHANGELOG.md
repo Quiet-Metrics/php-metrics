@@ -3,7 +3,7 @@
 All notable changes to `quiet-metrics/php-metrics` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org).
 
-## [0.7.0] - Unreleased
+## [0.7.0] - 2026-10-26
 
 ### Changed
 - **Breaking: PHP 8.3 minimum** (versions below are no longer security-supported: PHP 8.1 since 31 December 2025, PHP 8.2 from 31 December 2026). On an older PHP, Composer keeps resolving 0.6.x, which keeps working. Nothing changes in what is sent or counted.
